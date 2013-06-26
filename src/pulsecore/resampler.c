@@ -193,26 +193,18 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_PEAKS]                   = peaks_init,
 };
 
-pa_resampler* pa_resampler_new(
-        pa_mempool *pool,
-        const pa_sample_spec *a,
-        const pa_channel_map *am,
-        const pa_sample_spec *b,
-        const pa_channel_map *bm,
-        pa_resample_method_t method,
-        pa_resample_flags_t flags) {
+static pa_resample_method_t pa_resampler_fix_method(
+                pa_resample_flags_t flags,
+                pa_resample_method_t method,
+                const pa_sample_spec *a,
+                const pa_sample_spec *b) {
 
-    pa_resampler *r = NULL;
-
-    pa_assert(pool);
     pa_assert(a);
     pa_assert(b);
     pa_assert(pa_sample_spec_valid(a));
     pa_assert(pa_sample_spec_valid(b));
     pa_assert(method >= 0);
     pa_assert(method < PA_RESAMPLER_MAX);
-
-    /* Fix method */
 
     if (!(flags & PA_RESAMPLER_VARIABLE_RATE) && a->rate == b->rate) {
         pa_log_info("Forcing resampler 'copy', because of fixed, identical sample rates.");
@@ -244,6 +236,30 @@ pa_resampler* pa_resampler_new(
             method = PA_RESAMPLER_FFMPEG;
 #endif
     }
+
+    return method;
+}
+
+pa_resampler* pa_resampler_new(
+        pa_mempool *pool,
+        const pa_sample_spec *a,
+        const pa_channel_map *am,
+        const pa_sample_spec *b,
+        const pa_channel_map *bm,
+        pa_resample_method_t method,
+        pa_resample_flags_t flags) {
+
+    pa_resampler *r = NULL;
+
+    pa_assert(pool);
+    pa_assert(a);
+    pa_assert(b);
+    pa_assert(pa_sample_spec_valid(a));
+    pa_assert(pa_sample_spec_valid(b));
+    pa_assert(method >= 0);
+    pa_assert(method < PA_RESAMPLER_MAX);
+
+    method = pa_resampler_fix_method(flags, method, a, b);
 
     r = pa_xnew0(pa_resampler, 1);
     r->mempool = pool;
