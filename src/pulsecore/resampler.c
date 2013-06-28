@@ -259,6 +259,7 @@ static pa_sample_format_t pa_resampler_choose_work_format(
         case PA_RESAMPLER_SPEEX_FIXED_BASE:     /* Fall trough */
         case PA_RESAMPLER_FFMPEG:
             work_format = PA_SAMPLE_S16NE;
+            break;
 
         case PA_RESAMPLER_COPY:                 /* Fall trough */
         case PA_RESAMPLER_TRIVIAL:
