@@ -256,11 +256,15 @@ static pa_sample_format_t pa_resampler_choose_work_format(
         method = PA_RESAMPLER_SPEEX_FIXED_BASE;
 
     switch (method) {
+        /* This block is for resampling functions that only
+         * support the S16 sample format. */
         case PA_RESAMPLER_SPEEX_FIXED_BASE:     /* fall through */
         case PA_RESAMPLER_FFMPEG:
             work_format = PA_SAMPLE_S16NE;
             break;
 
+        /* This block is for resampling functions that support
+         * any sample format. */
         case PA_RESAMPLER_COPY:                 /* fall through */
         case PA_RESAMPLER_TRIVIAL:
             if (!map_required && a == b) {
