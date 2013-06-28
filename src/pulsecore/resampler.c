@@ -217,7 +217,7 @@ static pa_resample_method_t pa_resampler_fix_method(
     }
 
     switch (method) {
-        case PA_RESAMPLER_COPY:     /* Fall trough */
+        case PA_RESAMPLER_COPY:     /* fall through */
         case PA_RESAMPLER_FFMPEG:
             if (flags & PA_RESAMPLER_VARIABLE_RATE) {
                 pa_log_info("Resampler '%s' cannot do variable rate, reverting to resampler 'auto'.", pa_resample_method_to_string(method));
@@ -256,18 +256,18 @@ static pa_sample_format_t pa_resampler_choose_work_format(
         method = PA_RESAMPLER_SPEEX_FIXED_BASE;
 
     switch (method) {
-        case PA_RESAMPLER_SPEEX_FIXED_BASE:     /* Fall trough */
+        case PA_RESAMPLER_SPEEX_FIXED_BASE:     /* fall through */
         case PA_RESAMPLER_FFMPEG:
             work_format = PA_SAMPLE_S16NE;
             break;
 
-        case PA_RESAMPLER_COPY:                 /* Fall trough */
+        case PA_RESAMPLER_COPY:                 /* fall through */
         case PA_RESAMPLER_TRIVIAL:
             if (!map_required && a == b) {
                 work_format = a;
                 break;
             }
-                                                /* Else fall trough */
+                                                /* else fall through */
         case PA_RESAMPLER_PEAKS:
             if (a == PA_SAMPLE_S16NE || b == PA_SAMPLE_S16NE)
                 work_format = PA_SAMPLE_S16NE;
