@@ -343,6 +343,21 @@ static pa_sample_format_t pa_resampler_choose_work_format(
     return work_format;
 }
 
+static void find_implementation(pa_resampler *resampler, pa_resample_method_t method) {
+    pa_assert(resampler);
+    pa_assert(method >= 0);
+    pa_assert(method < PA_RESAMPLER_MAX);
+
+    if (method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
+        resampler->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
+    else if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FLOAT_MAX) {
+        resampler->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
+    } else if (method <= PA_RESAMPLER_SRC_LINEAR)
+        resampler->implementation = *impl_table[PA_RESAMPLER_SRC_LINEAR];
+    else
+        resampler->implementation = *impl_table[method];
+}
+
 pa_resampler* pa_resampler_new(
         pa_mempool *pool,
         const pa_sample_spec *a,
@@ -367,14 +382,8 @@ pa_resampler* pa_resampler_new(
     r = pa_xnew0(pa_resampler, 1);
     r->mempool = pool;
     r->method = method;
-    if (method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
-        r->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
-    else if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FLOAT_MAX) {
-        r->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
-    } else if (method <= PA_RESAMPLER_SRC_LINEAR)
-        r->implementation = *impl_table[PA_RESAMPLER_SRC_LINEAR];
-    else
-        r->implementation = *impl_table[method];
+
+    find_implementation(r, method);
 
     r->flags = flags;
 
