@@ -24,6 +24,7 @@
 #endif
 
 #include <string.h>
+#include <math.h>
 
 #ifdef HAVE_LIBSAMPLERATE
 #include <samplerate.h>
@@ -40,7 +41,6 @@
 #include <pulsecore/strbuf.h>
 #include <pulsecore/remap.h>
 #include <pulsecore/core-util.h>
-#include "ffmpeg/avcodec.h"
 
 #include "resampler.h"
 
@@ -118,21 +118,6 @@ static pa_resampler_implementation speex_impl = {
 };
 #endif
 
-static int ffmpeg_init(pa_resampler*r);
-static void ffmpeg_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
-static void ffmpeg_free(pa_resampler *r);
-
-struct ffmpeg { /* data specific to ffmpeg */
-    struct AVResampleContext *state;
-    pa_memchunk buf[PA_CHANNELS_MAX];
-};
-
-static pa_resampler_implementation ffmpeg_impl = {
-    .init = ffmpeg_init,
-    .free = ffmpeg_free,
-    .resample = ffmpeg_resample,
-};
-
 static int peaks_init(pa_resampler*r);
 static void peaks_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
 static void peaks_update_rates_or_reset(pa_resampler *r);
@@ -186,7 +171,6 @@ static pa_resampler_implementation *impl_table[] = {
 #else
     [PA_RESAMPLER_SPEEX_FIXED_BASE] = NULL,
 #endif
-    [PA_RESAMPLER_FFMPEG] = &ffmpeg_impl,
     [PA_RESAMPLER_COPY] = &copy_impl,
     [PA_RESAMPLER_PEAKS] = &peaks_impl,
 };
@@ -213,8 +197,7 @@ static pa_resample_method_t pa_resampler_fix_method(
     }
 
     switch (method) {
-        case PA_RESAMPLER_COPY:     /* fall through */
-        case PA_RESAMPLER_FFMPEG:
+        case PA_RESAMPLER_COPY:
             if (flags & PA_RESAMPLER_VARIABLE_RATE) {
                 pa_log_info("Resampler '%s' cannot do variable rate, reverting to resampler 'auto'.", pa_resample_method_to_string(method));
                 method = PA_RESAMPLER_AUTO;
@@ -236,10 +219,7 @@ static pa_resample_method_t pa_resampler_fix_method(
 #ifdef HAVE_SPEEX
         method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
 #else
-        if (flags & PA_RESAMPLER_VARIABLE_RATE)
-            method = PA_RESAMPLER_TRIVIAL;
-        else
-            method = PA_RESAMPLER_FFMPEG;
+        method = PA_RESAMPLER_TRIVIAL;
 #endif
     }
 
@@ -312,8 +292,7 @@ static pa_sample_format_t pa_resampler_choose_work_format(
     switch (method) {
         /* This block is for resampling functions that only
          * support the S16 sample format. */
-        case PA_RESAMPLER_SPEEX_FIXED_BASE:     /* fall through */
-        case PA_RESAMPLER_FFMPEG:
+        case PA_RESAMPLER_SPEEX_FIXED_BASE:
             work_format = PA_SAMPLE_S16NE;
             break;
 
@@ -634,7 +613,6 @@ static const char * const resample_methods[] = {
     "speex-fixed-8",
     "speex-fixed-9",
     "speex-fixed-10",
-    "ffmpeg",
     "auto",
     "copy",
     "peaks"
@@ -1763,119 +1741,6 @@ static int peaks_init(pa_resampler*r) {
     peaks_data->o_counter = peaks_data->i_counter = 0;
     memset(peaks_data->max_i, 0, sizeof(peaks_data->max_i));
     memset(peaks_data->max_f, 0, sizeof(peaks_data->max_f));
-
-    return 0;
-}
-
-/*** ffmpeg based implementation ***/
-
-static void ffmpeg_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
-    unsigned used_frames = 0, c;
-    int previous_consumed_frames = -1;
-    struct ffmpeg *ffmpeg_data;
-
-    pa_assert(r);
-    pa_assert(input);
-    pa_assert(output);
-    pa_assert(out_n_frames);
-
-    ffmpeg_data = r->implementation.data;
-
-    for (c = 0; c < r->work_channels; c++) {
-        unsigned u;
-        pa_memblock *b, *w;
-        int16_t *p, *t, *k, *q, *s;
-        int consumed_frames;
-
-        /* Allocate a new block */
-        b = pa_memblock_new(r->mempool, ffmpeg_data->buf[c].length + in_n_frames * sizeof(int16_t));
-        p = pa_memblock_acquire(b);
-
-        /* Now copy the input data, splitting up channels */
-        t = (int16_t*) pa_memblock_acquire_chunk(input) + c;
-        k = p;
-        for (u = 0; u < in_n_frames; u++) {
-            *k = *t;
-            t += r->work_channels;
-            k ++;
-        }
-        pa_memblock_release(input->memblock);
-
-        /* Allocate buffer for the result */
-        w = pa_memblock_new(r->mempool, *out_n_frames * sizeof(int16_t));
-        q = pa_memblock_acquire(w);
-
-        /* Now, resample */
-        used_frames = (unsigned) av_resample(ffmpeg_data->state,
-                                             q, p,
-                                             &consumed_frames,
-                                             (int) in_n_frames, (int) *out_n_frames,
-                                             c >= (unsigned) (r->work_channels-1));
-
-        pa_memblock_release(b);
-        pa_memblock_unref(b);
-
-        pa_assert(consumed_frames <= (int) in_n_frames);
-        pa_assert(previous_consumed_frames == -1 || consumed_frames == previous_consumed_frames);
-        previous_consumed_frames = consumed_frames;
-
-        /* And place the results in the output buffer */
-        s = (int16_t *) pa_memblock_acquire_chunk(output) + c;
-        for (u = 0; u < used_frames; u++) {
-            *s = *q;
-            q++;
-            s += r->work_channels;
-        }
-        pa_memblock_release(output->memblock);
-        pa_memblock_release(w);
-        pa_memblock_unref(w);
-    }
-
-    if (previous_consumed_frames < (int) in_n_frames) {
-        void *leftover_data = (int16_t *) pa_memblock_acquire_chunk(input) + previous_consumed_frames * r->o_ss.channels;
-        size_t leftover_length = (in_n_frames - previous_consumed_frames) * r->o_ss.channels * sizeof(int16_t);
-
-        save_leftover(r, leftover_data, leftover_length);
-        pa_memblock_release(input->memblock);
-    }
-
-    *out_n_frames = used_frames;
-}
-
-static void ffmpeg_free(pa_resampler *r) {
-    unsigned c;
-    struct ffmpeg *ffmpeg_data;
-
-    pa_assert(r);
-
-    ffmpeg_data = r->implementation.data;
-    if (ffmpeg_data->state)
-        av_resample_close(ffmpeg_data->state);
-
-    for (c = 0; c < PA_ELEMENTSOF(ffmpeg_data->buf); c++)
-        if (ffmpeg_data->buf[c].memblock)
-            pa_memblock_unref(ffmpeg_data->buf[c].memblock);
-}
-
-static int ffmpeg_init(pa_resampler *r) {
-    unsigned c;
-    struct ffmpeg *ffmpeg_data;
-
-    pa_assert(r);
-
-    ffmpeg_data = pa_xnew(struct ffmpeg, 1);
-    r->implementation.data = (void *) ffmpeg_data;
-
-    /* We could probably implement different quality levels by
-     * adjusting the filter parameters here. However, ffmpeg
-     * internally only uses these hardcoded values, so let's use them
-     * here for now as well until ffmpeg makes this configurable. */
-
-    if (!(ffmpeg_data->state = av_resample_init((int) r->o_ss.rate, (int) r->i_ss.rate, 16, 10, 0, 0.8)))
-        return -1;
-
-    for (c = 0; c < PA_ELEMENTSOF(ffmpeg_data->buf); c++)
-        pa_memchunk_reset(&ffmpeg_data->buf[c]);
 
     return 0;
 }

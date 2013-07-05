@@ -963,12 +963,12 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/database-simple.c
 endif
 
 # We split the foreign code off to not be annoyed by warnings we don't care about
-noinst_LTLIBRARIES += libpulsecore-foreign.la
+#noinst_LTLIBRARIES += libpulsecore-foreign.la
 
-libpulsecore_foreign_la_SOURCES = \
-		pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h
+#libpulsecore_foreign_la_SOURCES = \
+#		pulsecore/ffmpeg/resample2.c pulsecore/ffmpeg/avcodec.h pulsecore/ffmpeg/dsputil.h
 
-libpulsecore_foreign_la_CFLAGS = $(AM_CFLAGS) $(FOREIGN_CFLAGS)
+#libpulsecore_foreign_la_CFLAGS = $(AM_CFLAGS) $(FOREIGN_CFLAGS)
 
 ###################################
 #   Plug-in support libraries     #
@@ -2093,9 +2093,6 @@ uninstall-hook:
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
 
-update-ffmpeg:
-	wget -O pulsecore/ffmpeg/resample2.c http://svn.mplayerhq.hu/ffmpeg/trunk/libavcodec/resample2.c?view=co
-
 update-reserve:
 	for i in reserve.c reserve.h reserve-monitor.c reserve-monitor.h ; do \
 		wget -O $(top_srcdir)/src/modules/$$i http://git.0pointer.de/\?p=reserve.git\;a=blob_plain\;f=$$i\;hb=master ; \
@@ -2115,7 +2112,7 @@ update-map-file:
 	  echo "*;" ; \
 	  echo "};" ) > $(srcdir)/map-file
 
-update-all: update-ffmpeg update-map-file
+update-all: update-map-file
 
 # Force installation order of libraries. libtool relinks on install time, in
 # which case libpulsecommon has to be installed before others, but the padsp
@@ -2154,4 +2151,4 @@ coverage:
 	@echo ""
 endif
 
-.PHONY: massif update-all update-ffmpeg update-map-file coverage
+.PHONY: massif update-all update-map-file coverage
