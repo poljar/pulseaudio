@@ -111,10 +111,6 @@ static void speex_free(pa_resampler *r);
 static void speex_update_rates(pa_resampler *r);
 static void speex_reset(pa_resampler *r);
 
-struct speex{ /* data specific to speex */
-    SpeexResamplerState* state;
-};
-
 static pa_resampler_implementation speex_impl = {
     .init = speex_init,
     .free = speex_free,
@@ -141,10 +137,6 @@ static pa_resampler_implementation libswr_impl = {
 };
 #endif
 
-struct lswr {
-    SwrContext *state;
-};
-
 static int peaks_init(pa_resampler*r);
 static void peaks_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
 static void peaks_update_rates_or_reset(pa_resampler *r);
@@ -170,10 +162,6 @@ static void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, un
 static void libsamplerate_update_rates(pa_resampler *r);
 static void libsamplerate_reset(pa_resampler *r);
 static void libsamplerate_free(pa_resampler *r);
-
-struct src{ /* data specific to libsamplerate */
-    SRC_STATE *state;
-};
 
 static pa_resampler_implementation libsamplerate_impl = {
     .init = libsamplerate_init,
@@ -479,6 +467,8 @@ void pa_resampler_free(pa_resampler *r) {
 
     if (r->implementation.free)
         r->implementation.free(r);
+    else
+        pa_xfree(r->implementation.data);
 
     if (r->to_work_format_buf.memblock)
         pa_memblock_unref(r->to_work_format_buf.memblock);
@@ -489,7 +479,6 @@ void pa_resampler_free(pa_resampler *r) {
     if (r->from_work_format_buf.memblock)
         pa_memblock_unref(r->from_work_format_buf.memblock);
 
-    pa_xfree(r->implementation.data);
     pa_xfree(r);
 }
 
@@ -1398,14 +1387,14 @@ static void save_leftover(pa_resampler *r, void *buf, size_t len) {
 #ifdef HAVE_LIBSAMPLERATE
 static void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
     SRC_DATA data;
-    struct src *libsamplerate_data;
+    SRC_STATE *state;
 
     pa_assert(r);
     pa_assert(input);
     pa_assert(output);
     pa_assert(out_n_frames);
 
-    libsamplerate_data = r->implementation.data;
+    state = r->implementation.data;
     memset(&data, 0, sizeof(data));
 
     data.data_in = pa_memblock_acquire_chunk(input);
@@ -1417,7 +1406,7 @@ static void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, un
     data.src_ratio = (double) r->o_ss.rate / r->i_ss.rate;
     data.end_of_input = 0;
 
-    pa_assert_se(src_process(libsamplerate_data->state, &data) == 0);
+    pa_assert_se(src_process(state, &data) == 0);
 
     if (data.input_frames_used < in_n_frames) {
         void *leftover_data = data.data_in + data.input_frames_used * r->work_channels;
@@ -1433,42 +1422,41 @@ static void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, un
 }
 
 static void libsamplerate_update_rates(pa_resampler *r) {
-    struct src *libsamplerate_data;
+    SRC_STATE *state;
     pa_assert(r);
 
-    libsamplerate_data = r->implementation.data;
-    pa_assert_se(src_set_ratio(libsamplerate_data->state, (double) r->o_ss.rate / r->i_ss.rate) == 0);
+    state = r->implementation.data;
+    pa_assert_se(src_set_ratio(state, (double) r->o_ss.rate / r->i_ss.rate) == 0);
 }
 
 static void libsamplerate_reset(pa_resampler *r) {
-    struct src *libsamplerate_data;
+    SRC_STATE *state;
     pa_assert(r);
 
-    libsamplerate_data = r->implementation.data;
-    pa_assert_se(src_reset(libsamplerate_data->state) == 0);
+    state = r->implementation.data;
+    pa_assert_se(src_reset(state) == 0);
 }
 
 static void libsamplerate_free(pa_resampler *r) {
-    struct src *libsamplerate_data;
+    SRC_STATE *state;
     pa_assert(r);
 
-    libsamplerate_data = r->implementation.data;
-    if (libsamplerate_data->state)
-        src_delete(libsamplerate_data->state);
+    state = r->implementation.data;
+    if (state)
+        src_delete(state);
 }
 
 static int libsamplerate_init(pa_resampler *r) {
     int err;
-    struct src *libsamplerate_data;
+    SRC_STATE *state = NULL;
 
     pa_assert(r);
 
-    libsamplerate_data = pa_xnew(struct src, 1);
-    r->implementation.data = libsamplerate_data;
 
-    if (!(libsamplerate_data->state = src_new(r->method, r->o_ss.channels, &err)))
+    if (!(state = src_new(r->method, r->o_ss.channels, &err)))
         return -1;
 
+    r->implementation.data = state;
 
     return 0;
 }
@@ -1480,19 +1468,19 @@ static int libsamplerate_init(pa_resampler *r) {
 static void speex_resample_float(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
     float *in, *out;
     uint32_t inf = in_n_frames, outf = *out_n_frames;
-    struct speex *speex_data;
+    SpeexResamplerState *state;
 
     pa_assert(r);
     pa_assert(input);
     pa_assert(output);
     pa_assert(out_n_frames);
 
-    speex_data = r->implementation.data;
+    state = r->implementation.data;
 
     in = pa_memblock_acquire_chunk(input);
     out = pa_memblock_acquire_chunk(output);
 
-    pa_assert_se(speex_resampler_process_interleaved_float(speex_data->state, in, &inf, out, &outf) == 0);
+    pa_assert_se(speex_resampler_process_interleaved_float(state, in, &inf, out, &outf) == 0);
 
     pa_memblock_release(input->memblock);
     pa_memblock_release(output->memblock);
@@ -1504,19 +1492,19 @@ static void speex_resample_float(pa_resampler *r, const pa_memchunk *input, unsi
 static void speex_resample_int(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
     int16_t *in, *out;
     uint32_t inf = in_n_frames, outf = *out_n_frames;
-    struct speex *speex_data;
+    SpeexResamplerState *state;
 
     pa_assert(r);
     pa_assert(input);
     pa_assert(output);
     pa_assert(out_n_frames);
 
-    speex_data = r->implementation.data;
+    state = r->implementation.data;
 
     in = pa_memblock_acquire_chunk(input);
     out = pa_memblock_acquire_chunk(output);
 
-    pa_assert_se(speex_resampler_process_interleaved_int(speex_data->state, in, &inf, out, &outf) == 0);
+    pa_assert_se(speex_resampler_process_interleaved_int(state, in, &inf, out, &outf) == 0);
 
     pa_memblock_release(input->memblock);
     pa_memblock_release(output->memblock);
@@ -1526,42 +1514,40 @@ static void speex_resample_int(pa_resampler *r, const pa_memchunk *input, unsign
 }
 
 static void speex_update_rates(pa_resampler *r) {
-    struct speex *speex_data;
+    SpeexResamplerState *state;
     pa_assert(r);
 
-    speex_data = r->implementation.data;
+    state = r->implementation.data;
 
-    pa_assert_se(speex_resampler_set_rate(speex_data->state, r->i_ss.rate, r->o_ss.rate) == 0);
+    pa_assert_se(speex_resampler_set_rate(state, r->i_ss.rate, r->o_ss.rate) == 0);
 }
 
 static void speex_reset(pa_resampler *r) {
-    struct speex *speex_data;
+    SpeexResamplerState *state;
     pa_assert(r);
 
-    speex_data = r->implementation.data;
+    state = r->implementation.data;
 
-    pa_assert_se(speex_resampler_reset_mem(speex_data->state) == 0);
+    pa_assert_se(speex_resampler_reset_mem(state) == 0);
 }
 
 static void speex_free(pa_resampler *r) {
-    struct speex *speex_data;
+    SpeexResamplerState *state;
     pa_assert(r);
 
-    speex_data = r->implementation.data;
-    if (!speex_data->state)
+    state = r->implementation.data;
+    if (!state)
         return;
 
-    speex_resampler_destroy(speex_data->state);
+    speex_resampler_destroy(state);
 }
 
 static int speex_init(pa_resampler *r) {
     int q, err;
-    struct speex *speex_data;
+    SpeexResamplerState *state;
 
     pa_assert(r);
 
-    speex_data = pa_xnew(struct speex, 1);
-    r->implementation.data = speex_data;
 
     if (r->method >= PA_RESAMPLER_SPEEX_FIXED_BASE && r->method <= PA_RESAMPLER_SPEEX_FIXED_MAX) {
 
@@ -1577,8 +1563,10 @@ static int speex_init(pa_resampler *r) {
 
     pa_log_info("Choosing speex quality setting %i.", q);
 
-    if (!(speex_data->state = speex_resampler_init(r->work_channels, r->i_ss.rate, r->o_ss.rate, q, &err)))
+    if (!(state = speex_resampler_init(r->work_channels, r->i_ss.rate, r->o_ss.rate, q, &err)))
         return -1;
+
+    r->implementation.data = state;
 
     return 0;
 }
@@ -1590,7 +1578,7 @@ static int speex_init(pa_resampler *r) {
 static void lswr_resample(pa_resampler *r, const pa_memchunk *input,
                           unsigned in_n_frames, pa_memchunk *output,
                           unsigned *out_n_frames) {
-    struct lswr *lswr_data;
+    SwrContext *state;
     uint8_t *out;
     const uint8_t *in;
     unsigned out_samples;
@@ -1600,13 +1588,13 @@ static void lswr_resample(pa_resampler *r, const pa_memchunk *input,
     pa_assert(output);
     pa_assert(out_n_frames);
 
-    lswr_data = r->implementation.data;
+    state = r->implementation.data;
 
     out_samples = *out_n_frames;
     in = pa_memblock_acquire_chunk(input);
     out = pa_memblock_acquire_chunk(output);
 
-    out_samples = swr_convert(lswr_data->state, &out, out_samples, &in, in_n_frames);
+    out_samples = swr_convert(state, &out, out_samples, &in, in_n_frames);
 
     pa_memblock_release(input->memblock);
     pa_memblock_release(output->memblock);
@@ -1615,57 +1603,51 @@ static void lswr_resample(pa_resampler *r, const pa_memchunk *input,
 }
 
 static void lswr_udpate_rates(pa_resampler *r) {
-    struct lswr *lswr_data;
+    SwrContext *state;
     pa_assert(r);
 
-    lswr_data = r->implementation.data;
+    state = r->implementation.data;
 
-    av_opt_set_int(lswr_data->state, "in_sample_rate", r->i_ss.rate, 0);
-    av_opt_set_int(lswr_data->state, "out_sample_rate", r->o_ss.rate, 0);
+    av_opt_set_int(state, "in_sample_rate", r->i_ss.rate, 0);
+    av_opt_set_int(state, "out_sample_rate", r->o_ss.rate, 0);
 
-    swr_init(lswr_data->state);
+    swr_init(state);
 }
 
 static void lswr_reset(pa_resampler *r) {
-    struct lswr *lswr_data;
+    SwrContext *state;
     pa_assert(r);
 
-    lswr_data = r->implementation.data;
-    swr_convert(lswr_data->state, NULL, 0, NULL, 0);
+    state = r->implementation.data;
+    swr_convert(state, NULL, 0, NULL, 0);
 }
 
 static void lswr_free(pa_resampler *r) {
-    struct lswr *lswr_data;
+    SwrContext *state;
     pa_assert(r);
 
-    lswr_data = r->implementation.data;
-    swr_free(&lswr_data->state);
+    state = r->implementation.data;
+    swr_free(&state);
 }
 
 static int lswr_init(pa_resampler *r) {
-    struct lswr *lswr_data;
-
+    SwrContext *state;
     pa_assert(r);
 
-    lswr_data = pa_xnew0(struct lswr, 1);
-    r->implementation.data = lswr_data;
-
-    if (!(lswr_data->state = swr_alloc())) {
-        pa_xfree(lswr_data);
+    if (!(state = swr_alloc()))
         return -1;
-    }
 
-    av_opt_set_int(lswr_data->state, "in_channel_count", r->work_channels, 0);
-    av_opt_set_int(lswr_data->state, "out_channel_count", r->work_channels, 0);
-    av_opt_set_int(lswr_data->state, "in_sample_rate", r->i_ss.rate, 0);
-    av_opt_set_int(lswr_data->state, "out_sample_rate", r->o_ss.rate, 0);
-    av_opt_set_sample_fmt(lswr_data->state, "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
-    av_opt_set_sample_fmt(lswr_data->state, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+    av_opt_set_int(state, "in_channel_count", r->work_channels, 0);
+    av_opt_set_int(state, "out_channel_count", r->work_channels, 0);
+    av_opt_set_int(state, "in_sample_rate", r->i_ss.rate, 0);
+    av_opt_set_int(state, "out_sample_rate", r->o_ss.rate, 0);
+    av_opt_set_sample_fmt(state, "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+    av_opt_set_sample_fmt(state, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
 
-    if (swr_init(lswr_data->state) < 0) {
-        pa_xfree(lswr_data);
+    if (swr_init(state) < 0)
         return -1;
-    }
+
+    r->implementation.data = state;
 
     return 0;
 }
