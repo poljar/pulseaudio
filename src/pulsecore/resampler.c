@@ -34,6 +34,11 @@
 #include <speex/speex_resampler.h>
 #endif
 
+#include <libswresample/swresample.h>
+#include <libavutil/opt.h>
+#include <libavutil/error.h>
+#include <libavutil/channel_layout.h>
+
 #include <pulse/xmalloc.h>
 #include <pulsecore/sconv.h>
 #include <pulsecore/log.h>
@@ -118,6 +123,28 @@ static pa_resampler_implementation speex_impl = {
 };
 #endif
 
+#ifdef HAVE_LIBSWRESAMPLE
+static int lswr_init(pa_resampler *r);
+static void lswr_free(pa_resampler *r);
+static void lswr_resample(pa_resampler *r, const pa_memchunk *input,
+                          unsigned in_n_frames, pa_memchunk *output,
+                          unsigned *out_n_frames);
+static void lswr_udpate_rates(pa_resampler *r);
+static void lswr_reset(pa_resampler *r);
+
+static pa_resampler_implementation libswr_impl = {
+    .init = lswr_init,
+    .free = lswr_free,
+    .resample = lswr_resample,
+    .update_rates = lswr_udpate_rates,
+    .reset = lswr_reset,
+};
+#endif
+
+struct lswr {
+    SwrContext *state;
+};
+
 static int peaks_init(pa_resampler*r);
 static void peaks_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
 static void peaks_update_rates_or_reset(pa_resampler *r);
@@ -173,6 +200,11 @@ static pa_resampler_implementation *impl_table[] = {
 #endif
     [PA_RESAMPLER_COPY] = &copy_impl,
     [PA_RESAMPLER_PEAKS] = &peaks_impl,
+#ifdef HAVE_LIBSWRESAMPLE
+    [PA_RESAMPLER_LIBSWR] = &libswr_impl,
+#else
+    [PA_RESAMPLER_LIBSWR] = NULL,
+#endif
 };
 
 static pa_resample_method_t pa_resampler_fix_method(
@@ -615,7 +647,8 @@ static const char * const resample_methods[] = {
     "speex-fixed-10",
     "auto",
     "copy",
-    "peaks"
+    "peaks",
+    "libswresample"
 };
 
 const char *pa_resample_method_to_string(pa_resample_method_t m) {
@@ -1546,6 +1579,93 @@ static int speex_init(pa_resampler *r) {
 
     if (!(speex_data->state = speex_resampler_init(r->work_channels, r->i_ss.rate, r->o_ss.rate, q, &err)))
         return -1;
+
+    return 0;
+}
+#endif
+
+#ifdef HAVE_LIBSWRESAMPLE
+/* libswresample implementation */
+
+static void lswr_resample(pa_resampler *r, const pa_memchunk *input,
+                          unsigned in_n_frames, pa_memchunk *output,
+                          unsigned *out_n_frames) {
+    struct lswr *lswr_data;
+    uint8_t *out;
+    const uint8_t *in;
+    unsigned out_samples;
+
+    pa_assert(r);
+    pa_assert(input);
+    pa_assert(output);
+    pa_assert(out_n_frames);
+
+    lswr_data = r->implementation.data;
+
+    out_samples = *out_n_frames;
+    in = pa_memblock_acquire_chunk(input);
+    out = pa_memblock_acquire_chunk(output);
+
+    out_samples = swr_convert(lswr_data->state, &out, out_samples, &in, in_n_frames);
+
+    pa_memblock_release(input->memblock);
+    pa_memblock_release(output->memblock);
+
+    *out_n_frames = out_samples;
+}
+
+static void lswr_udpate_rates(pa_resampler *r) {
+    struct lswr *lswr_data;
+    pa_assert(r);
+
+    lswr_data = r->implementation.data;
+
+    av_opt_set_int(lswr_data->state, "in_sample_rate", r->i_ss.rate, 0);
+    av_opt_set_int(lswr_data->state, "out_sample_rate", r->o_ss.rate, 0);
+
+    swr_init(lswr_data->state);
+}
+
+static void lswr_reset(pa_resampler *r) {
+    struct lswr *lswr_data;
+    pa_assert(r);
+
+    lswr_data = r->implementation.data;
+    swr_convert(lswr_data->state, NULL, 0, NULL, 0);
+}
+
+static void lswr_free(pa_resampler *r) {
+    struct lswr *lswr_data;
+    pa_assert(r);
+
+    lswr_data = r->implementation.data;
+    swr_free(&lswr_data->state);
+}
+
+static int lswr_init(pa_resampler *r) {
+    struct lswr *lswr_data;
+
+    pa_assert(r);
+
+    lswr_data = pa_xnew0(struct lswr, 1);
+    r->implementation.data = lswr_data;
+
+    if (!(lswr_data->state = swr_alloc())) {
+        pa_xfree(lswr_data);
+        return -1;
+    }
+
+    av_opt_set_int(lswr_data->state, "in_channel_count", r->work_channels, 0);
+    av_opt_set_int(lswr_data->state, "out_channel_count", r->work_channels, 0);
+    av_opt_set_int(lswr_data->state, "in_sample_rate", r->i_ss.rate, 0);
+    av_opt_set_int(lswr_data->state, "out_sample_rate", r->o_ss.rate, 0);
+    av_opt_set_sample_fmt(lswr_data->state, "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+    av_opt_set_sample_fmt(lswr_data->state, "out_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+
+    if (swr_init(lswr_data->state) < 0) {
+        pa_xfree(lswr_data);
+        return -1;
+    }
 
     return 0;
 }

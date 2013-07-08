@@ -660,6 +660,21 @@ AS_IF([test "x$enable_samplerate" = "xyes" && test "x$HAVE_LIBSAMPLERATE" = "x0"
 AM_CONDITIONAL([HAVE_LIBSAMPLERATE], [test "x$HAVE_LIBSAMPLERATE" = x1])
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], AC_DEFINE([HAVE_LIBSAMPLERATE], 1, [Have libsamplerate?]))
 
+#### libswresample (optional) ####
+
+AC_ARG_ENABLE([libswresample],
+    AS_HELP_STRING([--disable-libswresample],[Disable optional libswresample support]))
+
+AS_IF([test "x$enable_libswresample" != "xno"],
+    [PKG_CHECK_MODULES(LIBSWRESAMPLE, libswresample, HAVE_LIBSWRESAMPLE=1, HAVE_LIBSWRESAMPLE=0)],
+    HAVE_LIBSWRESAMPLE=0)
+
+AS_IF([test "x$enable_libswresample" = "xyes" && test "x$HAVE_LIBSWRESAMPLE" = "x0"],
+    [AC_MSG_ERROR([*** libswresample not found])])
+
+AM_CONDITIONAL([HAVE_LIBSWRESAMPLE], [test "x$HAVE_LIBSWRESAMPLE" = x1])
+AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBSWRESAMPLE], 1, [Have libswresample]))
+
 #### Database support ####
 
 AC_ARG_WITH([database],
@@ -1384,6 +1399,7 @@ AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
+AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], ENABLE_LIBSWRESAMPLE=yes, ENABLE_LIBSWRESAMPLE=no)
 AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
 AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
@@ -1437,6 +1453,7 @@ echo "
     Enable systemd login:          ${ENABLE_SYSTEMD}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
+    Enable libswresample:          ${ENABLE_LIBSWRESAMPLE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
     Enable fftw:                   ${ENABLE_FFTW}

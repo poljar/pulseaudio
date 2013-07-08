@@ -55,6 +55,7 @@ typedef enum pa_resample_method {
     PA_RESAMPLER_AUTO, /* automatic select based on sample format */
     PA_RESAMPLER_COPY,
     PA_RESAMPLER_PEAKS,
+    PA_RESAMPLER_LIBSWR,
     PA_RESAMPLER_MAX
 } pa_resample_method_t;
 
