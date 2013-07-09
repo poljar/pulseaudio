@@ -358,14 +358,6 @@ static pa_resample_method_t find_base_method(pa_resample_method_t method) {
         return method;
 }
 
-static void find_implementation(pa_resampler *resampler, pa_resample_method_t method) {
-    pa_assert(resampler);
-    pa_assert(method >= 0);
-    pa_assert(method < PA_RESAMPLER_MAX);
-
-    resampler->implementation = *impl_table[find_base_method(method)];
-}
-
 pa_resampler* pa_resampler_new(
         pa_mempool *pool,
         const pa_sample_spec *a,
@@ -391,7 +383,7 @@ pa_resampler* pa_resampler_new(
     r->mempool = pool;
     r->method = method;
 
-    find_implementation(r, method);
+    r->implementation = *impl_table[find_base_method(method)];
 
     r->flags = flags;
 
