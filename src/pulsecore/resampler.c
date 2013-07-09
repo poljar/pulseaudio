@@ -344,19 +344,26 @@ static pa_sample_format_t pa_resampler_choose_work_format(
     return work_format;
 }
 
+static pa_resample_method_t find_base_method(pa_resample_method_t method) {
+    pa_assert(method >= 0);
+    pa_assert(method < PA_RESAMPLER_MAX);
+
+    if (method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
+        return PA_RESAMPLER_SPEEX_FIXED_BASE;
+    else if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FLOAT_MAX) {
+        return PA_RESAMPLER_SPEEX_FIXED_BASE;
+    } else if (method <= PA_RESAMPLER_SRC_LINEAR)
+        return PA_RESAMPLER_SRC_LINEAR;
+    else
+        return method;
+}
+
 static void find_implementation(pa_resampler *resampler, pa_resample_method_t method) {
     pa_assert(resampler);
     pa_assert(method >= 0);
     pa_assert(method < PA_RESAMPLER_MAX);
 
-    if (method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
-        resampler->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
-    else if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FLOAT_MAX) {
-        resampler->implementation = *impl_table[PA_RESAMPLER_SPEEX_FIXED_BASE];
-    } else if (method <= PA_RESAMPLER_SRC_LINEAR)
-        resampler->implementation = *impl_table[PA_RESAMPLER_SRC_LINEAR];
-    else
-        resampler->implementation = *impl_table[method];
+    resampler->implementation = *impl_table[find_base_method(method)];
 }
 
 pa_resampler* pa_resampler_new(
@@ -651,14 +658,8 @@ const char *pa_resample_method_to_string(pa_resample_method_t m) {
 }
 
 int pa_resample_method_supported(pa_resample_method_t m) {
-    if (m >= PA_RESAMPLER_SPEEX_FIXED_BASE && m <= PA_RESAMPLER_SPEEX_FIXED_MAX)
-        m = PA_RESAMPLER_SPEEX_FIXED_BASE;
-    else if (m >= PA_RESAMPLER_SPEEX_FLOAT_BASE && m <= PA_RESAMPLER_SPEEX_FLOAT_MAX)
-        m = PA_RESAMPLER_SPEEX_FIXED_BASE;
-    else if (m <= PA_RESAMPLER_SRC_LINEAR)
-        m = PA_RESAMPLER_SRC_LINEAR;
 
-    if(impl_table[m] == NULL)
+    if(impl_table[find_base_method(m)] == NULL)
         return 0;
     else
         return 1;
