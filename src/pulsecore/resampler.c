@@ -651,6 +651,13 @@ const char *pa_resample_method_to_string(pa_resample_method_t m) {
 }
 
 int pa_resample_method_supported(pa_resample_method_t m) {
+    if (m >= PA_RESAMPLER_SPEEX_FIXED_BASE && m <= PA_RESAMPLER_SPEEX_FIXED_MAX)
+        m = PA_RESAMPLER_SPEEX_FIXED_BASE;
+    else if (m >= PA_RESAMPLER_SPEEX_FLOAT_BASE && m <= PA_RESAMPLER_SPEEX_FLOAT_MAX)
+        m = PA_RESAMPLER_SPEEX_FIXED_BASE;
+    else if (m <= PA_RESAMPLER_SRC_LINEAR)
+        m = PA_RESAMPLER_SRC_LINEAR;
+
     if(impl_table[m] == NULL)
         return 0;
     else
