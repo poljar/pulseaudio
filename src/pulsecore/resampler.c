@@ -348,9 +348,7 @@ static pa_resample_method_t find_base_method(pa_resample_method_t method) {
     pa_assert(method >= 0);
     pa_assert(method < PA_RESAMPLER_MAX);
 
-    if (method >= PA_RESAMPLER_SPEEX_FIXED_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX)
-        return PA_RESAMPLER_SPEEX_FIXED_BASE;
-    else if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FLOAT_MAX) {
+    if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX) {
         return PA_RESAMPLER_SPEEX_FIXED_BASE;
     } else if (method <= PA_RESAMPLER_SRC_LINEAR)
         return PA_RESAMPLER_SRC_LINEAR;
