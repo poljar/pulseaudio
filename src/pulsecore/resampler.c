@@ -640,22 +640,10 @@ const char *pa_resample_method_to_string(pa_resample_method_t m) {
 
 int pa_resample_method_supported(pa_resample_method_t m) {
 
-    if (m < 0 || m >= PA_RESAMPLER_MAX)
+    if(impl_table[find_base_method(m)] == NULL)
         return 0;
-
-#ifndef HAVE_LIBSAMPLERATE
-    if (m <= PA_RESAMPLER_SRC_LINEAR)
-        return 0;
-#endif
-
-#ifndef HAVE_SPEEX
-    if (m >= PA_RESAMPLER_SPEEX_FLOAT_BASE && m <= PA_RESAMPLER_SPEEX_FLOAT_MAX)
-        return 0;
-    if (m >= PA_RESAMPLER_SPEEX_FIXED_BASE && m <= PA_RESAMPLER_SPEEX_FIXED_MAX)
-        return 0;
-#endif
-
-    return 1;
+    else
+        return 1;
 }
 
 pa_resample_method_t pa_parse_resample_method(const char *string) {
