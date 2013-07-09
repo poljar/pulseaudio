@@ -34,10 +34,10 @@
 #include <speex/speex_resampler.h>
 #endif
 
+#ifdef HAVE_LIBSWRESAMPLE
 #include <libswresample/swresample.h>
 #include <libavutil/opt.h>
-#include <libavutil/error.h>
-#include <libavutil/channel_layout.h>
+#endif
 
 #include <pulse/xmalloc.h>
 #include <pulsecore/sconv.h>
