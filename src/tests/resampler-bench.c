@@ -67,8 +67,7 @@
 
 static pa_mempool *pool = NULL;
 
-static pa_resampler* create_resampler(pa_resample_method_t method, unsigned fromrate, unsigned torate, pa_sample_format_t format)
-{
+static pa_resampler* create_resampler(pa_resample_method_t method, unsigned fromrate, unsigned torate, pa_sample_format_t format) {
     pa_resampler *r;
     pa_sample_spec a, b;
 
@@ -82,8 +81,7 @@ static pa_resampler* create_resampler(pa_resample_method_t method, unsigned from
     return r;
 }
 
-static pa_memchunk create_memchunk(unsigned rate, pa_sample_format_t format)
-{
+static pa_memchunk create_memchunk(unsigned rate, pa_sample_format_t format) {
     pa_sample_spec a;
     pa_memchunk i;
     void *d;
@@ -109,7 +107,6 @@ static pa_memchunk create_memchunk(unsigned rate, pa_sample_format_t format)
 
     pa_memblock_release(i.memblock);
 
-
     return i;
 }
 
@@ -130,8 +127,7 @@ static test_resamplers_t test_s16_resamplers[] = {
     {PA_RESAMPLER_MAX, NULL, 0}
 };
 
-static void run_s16(unsigned fromrate, unsigned torate)
-{
+static void run_s16(unsigned fromrate, unsigned torate) {
     test_resamplers_t *t = test_s16_resamplers;
     pa_resampler *resampler;
     pa_memchunk i, j;
@@ -164,8 +160,7 @@ static void run_s16(unsigned fromrate, unsigned torate)
     pa_memblock_unref(i.memblock);
 }
 
-static void run_float32(unsigned fromrate, unsigned torate)
-{
+static void run_float32(unsigned fromrate, unsigned torate) {
     test_resamplers_t *t = test_s16_resamplers;
     pa_resampler *resampler;
     pa_memchunk i, j;
