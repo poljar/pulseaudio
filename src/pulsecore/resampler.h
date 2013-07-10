@@ -27,6 +27,8 @@
 #include <pulsecore/memblock.h>
 #include <pulsecore/memchunk.h>
 
+#define PA_RESAMPLER_MAX_VARIANTS 32
+
 typedef struct pa_resampler pa_resampler;
 typedef struct pa_resampler_implementation pa_resampler_implementation;
 
@@ -37,6 +39,7 @@ struct pa_resampler_implementation {
     void (*resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
     void (*reset)(pa_resampler *r);
     void *data;
+    const char *names[PA_RESAMPLER_MAX_VARIANTS];
 };
 
 typedef enum pa_resample_method {

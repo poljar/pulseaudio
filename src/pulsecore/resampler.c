@@ -81,6 +81,7 @@ static int copy_init(pa_resampler *r);
 
 static pa_resampler_implementation copy_impl = {
     .init = copy_init,
+    .names = { "copy" },
 };
 
 static int trivial_init(pa_resampler*r);
@@ -97,6 +98,7 @@ static pa_resampler_implementation trivial_impl = {
     .resample = trivial_resample,
     .update_rates = trivial_update_rates_or_reset,
     .reset = trivial_update_rates_or_reset,
+    .names = { "trivial" },
 };
 
 #ifdef HAVE_SPEEX
@@ -110,6 +112,29 @@ static pa_resampler_implementation speex_impl = {
     .free = speex_free,
     .update_rates = speex_update_rates,
     .reset = speex_reset,
+    .names = { "speex-float-0",
+               "speex-float-1",
+               "speex-float-2",
+               "speex-float-3",
+               "speex-float-4",
+               "speex-float-5",
+               "speex-float-6",
+               "speex-float-7",
+               "speex-float-8",
+               "speex-float-9",
+               "speex-float-10",
+               "speex-fixed-0",
+               "speex-fixed-1",
+               "speex-fixed-2",
+               "speex-fixed-3",
+               "speex-fixed-4",
+               "speex-fixed-5",
+               "speex-fixed-6",
+               "speex-fixed-7",
+               "speex-fixed-8",
+               "speex-fixed-9",
+               "speex-fixed-10",
+    }
 };
 #endif
 
@@ -126,6 +151,7 @@ static pa_resampler_implementation ffmpeg_impl = {
     .init = ffmpeg_init,
     .free = ffmpeg_free,
     .resample = ffmpeg_resample,
+    .names = { "ffmpeg" },
 };
 
 static int peaks_init(pa_resampler*r);
@@ -137,6 +163,7 @@ static pa_resampler_implementation peaks_impl = {
     .resample = peaks_resample,
     .update_rates = peaks_update_rates_or_reset,
     .reset = peaks_update_rates_or_reset,
+    .names = { "peaks" },
 };
 
 struct peaks{ /* data specific to the peak finder pseudo resampler */
@@ -160,6 +187,12 @@ static pa_resampler_implementation libsamplerate_impl = {
     .resample = libsamplerate_resample,
     .update_rates = libsamplerate_update_rates,
     .reset = libsamplerate_reset,
+    .names = { "src-sinc-best-quality",
+               "src-sinc-best-quality",
+               "src-sinc-fastest",
+               "src-zero-order-hold",
+               "src-linear"
+    },
 };
 #endif
 
@@ -173,9 +206,9 @@ static pa_resampler_implementation *impl_table[] = {
 #endif
     [PA_RESAMPLER_TRIVIAL] = &trivial_impl,
 #ifdef HAVE_SPEEX
-    [PA_RESAMPLER_SPEEX_FIXED_BASE] = &speex_impl,
+    [PA_RESAMPLER_SPEEX_FLOAT_BASE] = &speex_impl,
 #else
-    [PA_RESAMPLER_SPEEX_FIXED_BASE] = NULL,
+    [PA_RESAMPLER_SPEEX_FLOAT_BASE] = NULL,
 #endif
     [PA_RESAMPLER_FFMPEG] = &ffmpeg_impl,
     [PA_RESAMPLER_COPY] = &copy_impl,
@@ -346,9 +379,9 @@ static pa_resample_method_t find_base_method(pa_resample_method_t method) {
     pa_assert(method < PA_RESAMPLER_MAX);
 
     if (method >= PA_RESAMPLER_SPEEX_FLOAT_BASE && method <= PA_RESAMPLER_SPEEX_FIXED_MAX) {
-        return PA_RESAMPLER_SPEEX_FIXED_BASE;
+        return PA_RESAMPLER_SPEEX_FLOAT_BASE;
     } else if (method <= PA_RESAMPLER_SRC_LINEAR)
-        return PA_RESAMPLER_SRC_LINEAR;
+        return PA_RESAMPLER_SRC_SINC_BEST_QUALITY;
     else
         return method;
 }
@@ -593,47 +626,16 @@ const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r) {
     return &r->o_ss;
 }
 
-static const char * const resample_methods[] = {
-    "src-sinc-best-quality",
-    "src-sinc-medium-quality",
-    "src-sinc-fastest",
-    "src-zero-order-hold",
-    "src-linear",
-    "trivial",
-    "speex-float-0",
-    "speex-float-1",
-    "speex-float-2",
-    "speex-float-3",
-    "speex-float-4",
-    "speex-float-5",
-    "speex-float-6",
-    "speex-float-7",
-    "speex-float-8",
-    "speex-float-9",
-    "speex-float-10",
-    "speex-fixed-0",
-    "speex-fixed-1",
-    "speex-fixed-2",
-    "speex-fixed-3",
-    "speex-fixed-4",
-    "speex-fixed-5",
-    "speex-fixed-6",
-    "speex-fixed-7",
-    "speex-fixed-8",
-    "speex-fixed-9",
-    "speex-fixed-10",
-    "ffmpeg",
-    "auto",
-    "copy",
-    "peaks"
-};
-
 const char *pa_resample_method_to_string(pa_resample_method_t m) {
+    struct pa_resampler_implementation *impl;
 
     if (m < 0 || m >= PA_RESAMPLER_MAX)
         return NULL;
 
-    return resample_methods[m];
+    if ((impl = impl_table[find_base_method(m)]) != NULL)
+        return impl->names[m - find_base_method(m)];
+    else
+        return NULL;
 }
 
 int pa_resample_method_supported(pa_resample_method_t m) {
@@ -650,7 +652,7 @@ pa_resample_method_t pa_parse_resample_method(const char *string) {
     pa_assert(string);
 
     for (m = 0; m < PA_RESAMPLER_MAX; m++)
-        if (pa_streq(string, resample_methods[m]))
+        if (pa_safe_streq(string, pa_resample_method_to_string(m)))
             return m;
 
     if (pa_streq(string, "speex-fixed"))
