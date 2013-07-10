@@ -244,11 +244,6 @@ static pa_resample_method_t pa_resampler_fix_method(
         method = PA_RESAMPLER_COPY;
     }
 
-    if (!pa_resample_method_supported(method)) {
-        pa_log_warn("Support for resampler '%s' not compiled in, reverting to 'auto'.", pa_resample_method_to_string(method));
-        method = PA_RESAMPLER_AUTO;
-    }
-
     switch (method) {
         case PA_RESAMPLER_COPY:     /* fall through */
         case PA_RESAMPLER_FFMPEG:
