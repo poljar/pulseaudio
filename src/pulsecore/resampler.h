@@ -38,6 +38,7 @@ struct pa_resampler_implementation {
     void (*resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
     void (*reset)(pa_resampler *r);
     void *data;
+    const char *name[];
 };
 
 typedef enum pa_resample_method {
