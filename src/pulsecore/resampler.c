@@ -77,6 +77,10 @@ struct pa_resampler {
     pa_resampler_implementation implementation;
 };
 
+static pa_resampler_implementation auto_impl = {
+    .names = { "auto" },
+};
+
 static int copy_init(pa_resampler *r);
 
 static pa_resampler_implementation copy_impl = {
@@ -211,6 +215,7 @@ static pa_resampler_implementation *impl_table[] = {
     [PA_RESAMPLER_SPEEX_FLOAT_BASE] = NULL,
 #endif
     [PA_RESAMPLER_FFMPEG] = &ffmpeg_impl,
+    [PA_RESAMPLER_AUTO] = &auto_impl,
     [PA_RESAMPLER_COPY] = &copy_impl,
     [PA_RESAMPLER_PEAKS] = &peaks_impl,
 };
