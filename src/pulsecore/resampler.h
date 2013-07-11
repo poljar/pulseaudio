@@ -26,10 +26,13 @@
 #include <pulse/channelmap.h>
 #include <pulsecore/memblock.h>
 #include <pulsecore/memchunk.h>
+#include <pulsecore/remap.h>
+#include <pulsecore/sconv.h>
 
 typedef struct pa_resampler pa_resampler;
 typedef struct pa_resampler_conf pa_resampler_conf;
 typedef struct pa_resampler_implementation pa_resampler_implementation;
+
 
 struct pa_resampler_implementation {
     int (*init)(pa_resampler *r);
@@ -66,6 +69,37 @@ typedef enum pa_resample_flags {
     PA_RESAMPLER_NO_REMIX      = 0x0004U,
     PA_RESAMPLER_NO_LFE        = 0x0008U
 } pa_resample_flags_t;
+
+struct pa_resampler {
+    pa_resample_method_t method;
+    pa_resample_flags_t flags;
+
+    pa_sample_spec i_ss, o_ss;
+    pa_channel_map i_cm, o_cm;
+    size_t i_fz, o_fz, w_sz;
+    pa_mempool *mempool;
+
+    pa_memchunk to_work_format_buf;
+    pa_memchunk remap_buf;
+    pa_memchunk resample_buf;
+    pa_memchunk from_work_format_buf;
+    unsigned to_work_format_buf_samples;
+    size_t remap_buf_size;
+    unsigned resample_buf_samples;
+    unsigned from_work_format_buf_samples;
+    bool remap_buf_contains_leftover_data;
+
+    pa_sample_format_t work_format;
+    uint8_t work_channels;
+
+    pa_convert_func_t to_work_format_func;
+    pa_convert_func_t from_work_format_func;
+
+    pa_remap_t remap;
+    bool map_required;
+
+    pa_resampler_implementation implementation;
+};
 
 pa_resampler* pa_resampler_new(
         pa_mempool *pool,
@@ -115,5 +149,48 @@ const pa_channel_map* pa_resampler_input_channel_map(pa_resampler *r);
 const pa_sample_spec* pa_resampler_input_sample_spec(pa_resampler *r);
 const pa_channel_map* pa_resampler_output_channel_map(pa_resampler *r);
 const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r);
+
+/* Implementation specific functions */
+
+int trivial_init(pa_resampler*r);
+void trivial_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
+void trivial_update_rates_or_reset(pa_resampler *r);
+
+struct trivial { /* data specific to the trivial resampler */
+    unsigned o_counter;
+    unsigned i_counter;
+};
+
+int peaks_init(pa_resampler*r);
+void peaks_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
+void peaks_update_rates_or_reset(pa_resampler *r);
+
+struct peaks{ /* data specific to the peak finder pseudo resampler */
+    unsigned o_counter;
+    unsigned i_counter;
+
+    float max_f[PA_CHANNELS_MAX];
+    int16_t max_i[PA_CHANNELS_MAX];
+};
+
+int libsamplerate_init(pa_resampler*r);
+void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames);
+void libsamplerate_update_rates(pa_resampler *r);
+void libsamplerate_reset(pa_resampler *r);
+void libsamplerate_free(pa_resampler *r);
+
+int speex_init(pa_resampler*r);
+void speex_free(pa_resampler *r);
+void speex_update_rates(pa_resampler *r);
+void speex_reset(pa_resampler *r);
+
+
+int lswr_init(pa_resampler *r);
+void lswr_free(pa_resampler *r);
+void lswr_resample(pa_resampler *r, const pa_memchunk *input,
+                          unsigned in_n_frames, pa_memchunk *output,
+                          unsigned *out_n_frames);
+void lswr_udpate_rates(pa_resampler *r);
+void lswr_reset(pa_resampler *r);
 
 #endif

@@ -917,9 +917,9 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/thread-mq.c pulsecore/thread-mq.h \
 		pulsecore/database.h
 
-libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSWRESAMPLE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSWRESAMPLE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
-libpulsecore_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSWRESAMPLE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSWRESAMPLE_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 
 if HAVE_NEON
 noinst_LTLIBRARIES += libpulsecore_sconv_neon.la libpulsecore_mix_neon.la
@@ -967,6 +967,25 @@ endif
 if HAVE_SIMPLEDB
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/database-simple.c
 endif
+
+if HAVE_SPEEX
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/speex.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSPEEX_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSPEEX_LIBS)
+endif
+
+if HAVE_LIBSWRESAMPLE
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/lswr.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSWRESAMPLE_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSWRESAMPLE_LIBS)
+endif
+
+if HAVE_SPEEX
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/libsamplerate.c
+endif
+
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/peaks.c \
+    pulsecore/resampler/trivial.c
 
 # We split the foreign code off to not be annoyed by warnings we don't care about
 #noinst_LTLIBRARIES += libpulsecore-foreign.la
