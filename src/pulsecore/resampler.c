@@ -1423,7 +1423,6 @@ static int libsamplerate_init(pa_resampler *r) {
 
     pa_assert(r);
 
-
     if (!(state = src_new(r->method, r->o_ss.channels, &err)))
         return -1;
 
@@ -1518,7 +1517,6 @@ static int speex_init(pa_resampler *r) {
     SpeexResamplerState *state;
 
     pa_assert(r);
-
 
     if (r->method >= PA_RESAMPLER_SPEEX_FIXED_BASE && r->method <= PA_RESAMPLER_SPEEX_FIXED_MAX) {
 
