@@ -29,6 +29,8 @@
 #include <pulsecore/remap.h>
 #include <pulsecore/sconv.h>
 
+#define PA_RESAMPLER_MAX_VARIANTS 25
+
 typedef struct pa_resampler pa_resampler;
 typedef struct pa_resampler_conf pa_resampler_conf;
 typedef struct pa_resampler_implementation pa_resampler_implementation;
@@ -41,7 +43,7 @@ struct pa_resampler_implementation {
     void (*resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
     void (*reset)(pa_resampler *r);
     void *data;
-    const char *name[];
+    const char *names[PA_RESAMPLER_MAX_VARIANTS];
 };
 
 typedef enum pa_resample_method {
