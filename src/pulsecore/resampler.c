@@ -37,7 +37,10 @@
 
 extern pa_resampler_implementation peaks_impl;
 extern pa_resampler_implementation trivial_impl;
+
+#ifdef HAVE_FFMPEG
 extern pa_resampler_implementation ffmpeg_impl;
+#endif
 
 #ifdef HAVE_SPEEX
 extern pa_resampler_implementation speex_impl;
@@ -72,7 +75,11 @@ static pa_resampler_implementation *impl_table[] = {
 #else
     [PA_RESAMPLER_SPEEX_FLOAT_BASE] = NULL,
 #endif
+#ifdef HAVE_FFMPEG
     [PA_RESAMPLER_FFMPEG] = &ffmpeg_impl,
+#else
+    [PA_RESAMPLER_FFMPEG] = NULL,
+#endif
     [PA_RESAMPLER_AUTO] = &auto_impl,
     [PA_RESAMPLER_COPY] = &copy_impl,
     [PA_RESAMPLER_PEAKS] = &peaks_impl,

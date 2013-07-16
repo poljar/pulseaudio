@@ -645,6 +645,16 @@ else
     AC_MSG_RESULT([no])
 fi
 
+#### ffmpeg support (optional) ####
+
+AC_ARG_ENABLE([ffmpeg],
+    AS_HELP_STRING([--disable-ffmpeg], [Disable optional ffmpeg resampler support]))
+
+AS_IF([test "x$enable_ffmpeg" != "xyes"], HAVE_FFMPEG=0, HAVE_FFMPEG=1)
+
+AM_CONDITIONAL([HAVE_FFMPEG], [test "x$HAVE_FFMPEG" = x1])
+AS_IF([test "x$HAVE_FFMPEG" = "x1"], AC_DEFINE([HAVE_FFMPEG], 1, [Have ffmpeg?]))
+
 #### Libsamplerate support (optional) ####
 
 AC_ARG_ENABLE([samplerate],
@@ -1392,6 +1402,7 @@ AS_IF([test "x$HAVE_SYSTEMD" = "x1"], ENABLE_SYSTEMD=yes, ENABLE_SYSTEMD=no)
 AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
+AS_IF([test "x$HAVE_FFMPEG" = "x1"], ENABLE_FFMPEG=yes, ENABLE_FFMPEG=no)
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
 AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
@@ -1445,6 +1456,7 @@ echo "
       Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
     Enable systemd login:          ${ENABLE_SYSTEMD}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
+    Enable ffmpeg:                 ${ENABLE_FFMPEG}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}

@@ -889,7 +889,6 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/remap_mmx.c pulsecore/remap_sse.c \
 		pulsecore/resampler.c pulsecore/resampler.h \
 		pulsecore/resampler_peaks.c pulsecore/resampler_trivial.c \
-		pulsecore/resampler_ffmpeg.c \
 		pulsecore/rtpoll.c pulsecore/rtpoll.h \
 		pulsecore/mix.c pulsecore/mix.h \
 		pulsecore/cpu.h \
@@ -962,6 +961,10 @@ endif
 
 if HAVE_SIMPLEDB
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/database-simple.c
+endif
+
+if HAVE_FFMPEG
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler_ffmpeg.c
 endif
 
 if HAVE_SPEEX
