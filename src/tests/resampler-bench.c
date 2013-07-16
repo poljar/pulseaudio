@@ -64,7 +64,7 @@
 
 #define TIMES 300
 #define TIMES2 100
-
+#define BLOCKSIZE_MSEC 10
 static pa_mempool *pool = NULL;
 
 static pa_resampler* create_resampler(pa_resample_method_t method, unsigned fromrate, unsigned torate, pa_sample_format_t format) {
@@ -90,7 +90,7 @@ static pa_memchunk create_memchunk(unsigned rate, pa_sample_format_t format) {
     a.rate = rate;
     a.format = format;
 
-    i.memblock = pa_memblock_new(pool, pa_usec_to_bytes(20*PA_USEC_PER_MSEC, &a));
+    i.memblock = pa_memblock_new(pool, pa_usec_to_bytes(BLOCKSIZE_MSEC*PA_USEC_PER_MSEC, &a));
     i.length = pa_memblock_get_length(i.memblock);
     i.index = 0;
 
@@ -113,36 +113,47 @@ static pa_memchunk create_memchunk(unsigned rate, pa_sample_format_t format) {
 typedef struct {
     pa_resample_method_t method;
     const char *name;
-    enum {FIXED, FLOAT, BOTH} format;
+    enum {SINT16, FLOAT, BOTH} format;
 } test_resamplers_t;
 
-static test_resamplers_t test_s16_resamplers[] = {
-    {PA_RESAMPLER_SPEEX_FIXED_BASE, "speex-fixed", FIXED},
+static test_resamplers_t test_resamplers[] = {
+    {PA_RESAMPLER_SPEEX_FIXED_BASE, "speex-fixed", SINT16},
     {PA_RESAMPLER_SPEEX_FLOAT_BASE, "speex-float", FLOAT},
     {PA_RESAMPLER_TRIVIAL, "trivial", BOTH},
     {PA_RESAMPLER_SRC_SINC_FASTEST, "src-sinc-fastest", FLOAT},
     {PA_RESAMPLER_SRC_ZERO_ORDER_HOLD, "src-zoh", FLOAT},
     {PA_RESAMPLER_SRC_LINEAR, "src-linear", FLOAT},
-    {PA_RESAMPLER_LIBSWR, "libswr", FLOAT},
+    {PA_RESAMPLER_LIBSWR, "libswr", BOTH},
+//    {PA_RESAMPLER_FFMPEG, "ffmpeg", SINT16},
+//    {PA_RESAMPLER_SINC, "sinc", FLOAT},
+//    {PA_RESAMPLER_ZITA, "zita", FLOAT},
     {PA_RESAMPLER_MAX, NULL, 0}
 };
 
-static void run_s16(unsigned fromrate, unsigned torate) {
-    test_resamplers_t *t = test_s16_resamplers;
+static void run(unsigned fmt, unsigned fromrate, unsigned torate) {
+    test_resamplers_t *t = test_resamplers;
     pa_resampler *resampler;
     pa_memchunk i, j;
     pa_resample_method_t got_method;
+    pa_sample_format_t got_format;
+    pa_sample_format_t format;
 
-    pa_log_debug("Checking s16 resampling (%d -> %d)", fromrate, torate);
+    pa_assert(fmt == SINT16 || fmt == FLOAT);
+    format = (fmt == FLOAT) ? PA_SAMPLE_FLOAT32NE : PA_SAMPLE_S16NE;
 
-    i = create_memchunk(fromrate, PA_SAMPLE_S16NE);
+    pa_log_debug("Checking %s resampling (%d -> %d)",
+        pa_sample_format_to_string(format), fromrate, torate);
+
+    i = create_memchunk(fromrate, format);
 
     for ( ; t->method < PA_RESAMPLER_MAX; t++) {
-        if (t->format == FLOAT)
+        if (t->format != fmt && t->format != BOTH)
             continue;
+
         pa_log_set_level(PA_LOG_ERROR);
-        resampler = create_resampler(t->method, fromrate, torate, PA_SAMPLE_S16NE);
+        resampler = create_resampler(t->method, fromrate, torate, format);
         pa_log_set_level(PA_LOG_DEBUG);
+
         got_method = pa_resampler_get_method(resampler);
         if (got_method != t->method) {
             pa_log_info("Requested %s, but got %s, skipping test",
@@ -150,37 +161,10 @@ static void run_s16(unsigned fromrate, unsigned torate) {
             continue;
         }
 
-        PA_CPU_TEST_RUN_START(t->name, TIMES, TIMES2) {
-            pa_resampler_run(resampler, &i, &j);
-            pa_memblock_unref(j.memblock);
-        } PA_CPU_TEST_RUN_STOP
-        pa_resampler_free(resampler);
-    }
-
-    pa_memblock_unref(i.memblock);
-}
-
-static void run_float32(unsigned fromrate, unsigned torate) {
-    test_resamplers_t *t = test_s16_resamplers;
-    pa_resampler *resampler;
-    pa_memchunk i, j;
-    pa_resample_method_t got_method;
-
-    pa_log_debug("Checking float32 resampling (%d -> %d)", fromrate, torate);
-
-    i = create_memchunk(fromrate, PA_SAMPLE_FLOAT32NE);
-
-    for ( ; t->method < PA_RESAMPLER_MAX; t++) {
-        if (t->format == FIXED)
-            continue;
-        pa_log_set_level(PA_LOG_ERROR);
-        resampler = create_resampler(t->method, fromrate, torate, PA_SAMPLE_FLOAT32NE);
-        pa_log_set_level(PA_LOG_DEBUG);
-
-        got_method = pa_resampler_get_method(resampler);
-        if (got_method != t->method) {
+        got_format = pa_resampler_get_work_format(resampler);
+        if (got_format != format) {
             pa_log_info("Requested %s, but got %s, skipping test",
-                pa_resample_method_to_string(t->method), pa_resample_method_to_string(got_method));
+                pa_sample_format_to_string(format), pa_sample_format_to_string(got_format));
             continue;
         }
 
@@ -195,22 +179,22 @@ static void run_float32(unsigned fromrate, unsigned torate) {
 }
 
 START_TEST (s16_test) {
-    run_s16(44100, 48000);
-    run_s16(48000, 16000);
-    run_s16(16000, 32000);
-    run_s16(32000, 16000);
-    run_s16(16000, 48000);
-    run_s16(48000, 16000);
+    run(SINT16, 44100, 48000);
+    run(SINT16, 48000, 16000);
+    run(SINT16, 16000, 32000);
+    run(SINT16, 32000, 16000);
+    run(SINT16, 16000, 48000);
+    run(SINT16, 48000, 16000);
 }
 END_TEST
 
 START_TEST (float32_test) {
-    run_float32(44100, 48000);
-    run_float32(48000, 16000);
-    run_float32(16000, 32000);
-    run_float32(32000, 16000);
-    run_float32(16000, 48000);
-    run_float32(48000, 16000);
+    run(FLOAT, 44100, 48000);
+    run(FLOAT, 48000, 16000);
+    run(FLOAT, 16000, 32000);
+    run(FLOAT, 32000, 16000);
+    run(FLOAT, 16000, 48000);
+    run(FLOAT, 48000, 16000);
 }
 END_TEST
 
@@ -233,7 +217,6 @@ int main(int argc, char *argv[]) {
     tcase_set_timeout(tc, 120);
     suite_add_tcase(s, tc);
 
-    /* Conversion tests */
     tc = tcase_create("float32");
     tcase_add_test(tc, float32_test);
     tcase_set_timeout(tc, 120);
