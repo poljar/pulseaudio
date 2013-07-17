@@ -123,7 +123,7 @@ static test_resamplers_t test_resamplers[] = {
     {PA_RESAMPLER_SRC_SINC_FASTEST, "src-sinc-fastest", FLOAT},
     {PA_RESAMPLER_SRC_ZERO_ORDER_HOLD, "src-zoh", FLOAT},
     {PA_RESAMPLER_SRC_LINEAR, "src-linear", FLOAT},
-    {PA_RESAMPLER_LIBSWR, "libswr", BOTH},
+    {PA_RESAMPLER_LSWR, "lswr", BOTH},
 //    {PA_RESAMPLER_FFMPEG, "ffmpeg", SINT16},
 //    {PA_RESAMPLER_SINC, "sinc", FLOAT},
 //    {PA_RESAMPLER_ZITA, "zita", FLOAT},
