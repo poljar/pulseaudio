@@ -175,9 +175,9 @@ static void calc_map_table(pa_resampler *r);
 
 static pa_resampler_implementation *impl_table[] = {
 #ifdef HAVE_LIBSAMPLERATE
-    [PA_RESAMPLER_SRC_LINEAR] = &libsamplerate_impl,
+    [PA_RESAMPLER_SRC_SINC_BEST_QUALITY] = &libsamplerate_impl,
 #else
-    [PA_RESAMPLER_SRC_LINEAR] = NULL,
+    [PA_RESAMPLER_SRC_SINC_BEST_QUALITY] = NULL,
 #endif
     [PA_RESAMPLER_TRIVIAL] = &trivial_impl,
 #ifdef HAVE_SPEEX
