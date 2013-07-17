@@ -149,6 +149,8 @@ int pa_resample_method_supported(pa_resample_method_t m);
 
 void pa_resampler_save_leftover(pa_resampler *r, void *buf, size_t len);
 
+pa_sample_format_t pa_resampler_get_work_format(pa_resampler *r);
+
 const pa_channel_map* pa_resampler_input_channel_map(pa_resampler *r);
 const pa_sample_spec* pa_resampler_input_sample_spec(pa_resampler *r);
 const pa_channel_map* pa_resampler_output_channel_map(pa_resampler *r);

@@ -125,6 +125,11 @@ static pa_resample_method_t choose_auto_resampler(pa_resample_flags_t flags) {
     return method;
 }
 
+pa_sample_format_t pa_resampler_get_work_format(pa_resampler *r) {
+        pa_assert(r);
+            return r->work_format;
+}
+
 static pa_resample_method_t pa_resampler_fix_method(
                 pa_resample_flags_t flags,
                 pa_resample_method_t method,
