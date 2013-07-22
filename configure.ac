@@ -700,6 +700,21 @@ AS_IF([test "x$enable_libswresample" = "xyes" && test "x$HAVE_LIBSWRESAMPLE" = "
 AM_CONDITIONAL([HAVE_LIBSWRESAMPLE], [test "x$HAVE_LIBSWRESAMPLE" = x1])
 AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBSWRESAMPLE], 1, [Have libswresample]))
 
+#### libavresample support (optional) ####
+
+AC_ARG_ENABLE([libavresample],
+   AS_HELP_STRING([--disable-libavresample],[Disable optional libavresample support]))
+
+AS_IF([test "x$enable_libavresample" != "xno"],
+    [PKG_CHECK_MODULES(LIBAVRESAMPLE, libavresample, HAVE_LIBAVRESAMPLE=1, HAVE_LIBAVRESAMPLE=0)],
+    HAVE_LIBAVRESAMPLE=0)
+
+AS_IF([test "x$enable_libavresample" = "xyes" && test "x$HAVE_LIBAVRESAMPLE" = "x0"],
+    [AC_MSG_ERROR([*** libavresample not found])])
+
+AM_CONDITIONAL([HAVE_LIBAVRESAMPLE], [test "x$HAVE_LIBAVRESAMPLE" = x1])
+AS_IF([test "x$HAVE_LIBAVRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBAVRESAMPLE], 1, [Have libavresample]))
+
 #### Database support ####
 
 AC_ARG_WITH([database],
@@ -1436,6 +1451,7 @@ AS_IF([test "x$HAVE_FFMPEG" = "x1"], ENABLE_FFMPEG=yes, ENABLE_FFMPEG=no)
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
 AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
 AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], ENABLE_LIBSWRESAMPLE=yes, ENABLE_LIBSWRESAMPLE=no)
+AS_IF([test "x$HAVE_LIBAVRESAMPLE" = "x1"], ENABLE_LIBAVRESAMPLE=yes, ENABLE_LIBAVRESAMPLE=no)
 AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
 AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
@@ -1492,6 +1508,7 @@ echo "
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable soxr:                   ${ENABLE_SOXR}
     Enable libswresample:          ${ENABLE_LIBSWRESAMPLE}
+    Enable libavresample:          ${ENABLE_LIBAVRESAMPLE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
     Enable fftw:                   ${ENABLE_FFTW}

@@ -58,6 +58,10 @@ extern pa_resampler_implementation soxr_impl;
 extern pa_resampler_implementation lswr_impl;
 #endif
 
+#ifdef HAVE_LIBAVRESAMPLE
+extern pa_resampler_implementation lavr_impl;
+#endif
+
 static pa_resampler_implementation auto_impl = {
     .names = { "auto" },
 };
@@ -95,6 +99,11 @@ static pa_resampler_implementation *impl_table[] = {
     [PA_RESAMPLER_LSWR] = &lswr_impl,
 #else
     [PA_RESAMPLER_LSWR] = NULL,
+#endif
+#ifdef HAVE_LIBAVRESAMPLE
+    [PA_RESAMPLER_LAVR] = &lavr_impl,
+#else
+    [PA_RESAMPLER_LAVR] = NULL,
 #endif
 #ifdef HAVE_SOXR
     [PA_RESAMPLER_SOXR] = &soxr_impl,
@@ -136,6 +145,7 @@ static pa_resample_method_t pa_resampler_fix_method(
         case PA_RESAMPLER_COPY:     /* fall through */
         case PA_RESAMPLER_FFMPEG:
         case PA_RESAMPLER_LSWR:
+        case PA_RESAMPLER_LAVR:
         case PA_RESAMPLER_SOXR:
             if (flags & PA_RESAMPLER_VARIABLE_RATE) {
                 pa_log_info("Resampler '%s' cannot do variable rate, reverting to resampler 'auto'.", pa_resample_method_to_string(method));
@@ -245,6 +255,7 @@ static pa_sample_format_t pa_resampler_choose_work_format(
         case PA_RESAMPLER_PEAKS:
         case PA_RESAMPLER_LSWR:
         case PA_RESAMPLER_SOXR:
+        case PA_RESAMPLER_LAVR:
             if (a == PA_SAMPLE_S16NE || b == PA_SAMPLE_S16NE)
                 work_format = PA_SAMPLE_S16NE;
             else if (sample_format_more_precise(a, PA_SAMPLE_S16NE) ||

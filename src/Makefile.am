@@ -991,6 +991,12 @@ libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSWRESAMPLE_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSWRESAMPLE_LIBS)
 endif
 
+if HAVE_LIBAVRESAMPLE
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler_libavresample.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBAVRESAMPLE_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBAVRESAMPLE_LIBS)
+endif
+
 # We split the foreign code off to not be annoyed by warnings we don't care about
 noinst_LTLIBRARIES += libpulsecore-foreign.la
 
