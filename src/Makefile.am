@@ -979,6 +979,12 @@ libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSAMPLERATE_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSAMPLERATE_LIBS)
 endif
 
+if HAVE_SOXR
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler_sox.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(SOXR_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(SOXR_LIBS)
+endif
+
 if HAVE_LIBSWRESAMPLE
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler_libswresample.c
 libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSWRESAMPLE_CFLAGS)

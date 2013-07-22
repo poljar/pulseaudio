@@ -670,6 +670,21 @@ AS_IF([test "x$enable_samplerate" = "xyes" && test "x$HAVE_LIBSAMPLERATE" = "x0"
 AM_CONDITIONAL([HAVE_LIBSAMPLERATE], [test "x$HAVE_LIBSAMPLERATE" = x1])
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], AC_DEFINE([HAVE_LIBSAMPLERATE], 1, [Have libsamplerate?]))
 
+#### sox resampler support (optional) ####
+
+AC_ARG_ENABLE([soxr],
+    AS_HELP_STRING([--disable-soxr],[Disable optional soxr support]))
+
+AS_IF([test "x$enable_soxr" != "xno"],
+    [PKG_CHECK_MODULES(SOXR, soxr, HAVE_SOXR=1, HAVE_SOXR=0)],
+    HAVE_SOXR=0)
+
+AS_IF([test "x$enable_soxr" = "xyes" && test "x$HAVE_SOXR" = "x0"],
+    [AC_MSG_ERROR([*** soxr not found])])
+
+AM_CONDITIONAL([HAVE_SOXR], [test "x$HAVE_SOXR" = x1])
+AS_IF([test "x$HAVE_SOXR" = "x1"], AC_DEFINE([HAVE_SOXR], 1, [Have soxr?]))
+
 #### libswresample support (optional) ####
 
 AC_ARG_ENABLE([libswresample],
@@ -1419,6 +1434,7 @@ AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPA
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
 AS_IF([test "x$HAVE_FFMPEG" = "x1"], ENABLE_FFMPEG=yes, ENABLE_FFMPEG=no)
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
+AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
 AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], ENABLE_LIBSWRESAMPLE=yes, ENABLE_LIBSWRESAMPLE=no)
 AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
@@ -1474,6 +1490,7 @@ echo "
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable ffmpeg:                 ${ENABLE_FFMPEG}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
+    Enable soxr:                   ${ENABLE_SOXR}
     Enable libswresample:          ${ENABLE_LIBSWRESAMPLE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
