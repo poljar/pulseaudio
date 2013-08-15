@@ -40,6 +40,8 @@
 #include <pulsecore/sample-util.h>
 #include <pulsecore/core-util.h>
 
+#define PADDING 280
+
 static void dump_block(const char *label, const pa_sample_spec *ss, const pa_memchunk *chunk) {
     void *d;
     unsigned i;
@@ -57,7 +59,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_ALAW: {
             uint8_t *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++)
+            for (i = 0; i < 10; i++)
                 printf("      0x%02x ", *(u++));
 
             break;
@@ -67,7 +69,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_S16RE: {
             uint16_t *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++)
+            for (i = 0; i < 10; i++)
                 printf("    0x%04x ", *(u++));
 
             break;
@@ -77,7 +79,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_S32RE: {
             uint32_t *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++)
+            for (i = 0; i < 10; i++)
                 printf("0x%08x ", *(u++));
 
             break;
@@ -87,7 +89,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_S24_32RE: {
             uint32_t *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++)
+            for (i = 0; i < 10; i++)
                 printf("0x%08x ", *(u++));
 
             break;
@@ -97,7 +99,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_FLOAT32RE: {
             float *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++) {
+            for (i = 0; i < 10; i++) {
                 printf("%4.3g ", ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_FLOAT32_SWAP(*u));
                 u++;
             }
@@ -109,7 +111,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
         case PA_SAMPLE_S24BE: {
             uint8_t *u = d;
 
-            for (i = 0; i < chunk->length / pa_frame_size(ss); i++) {
+            for (i = 0; i < 10; i++) {
                 printf("  0x%06x ", PA_READ24NE(u));
                 u += pa_frame_size(ss);
             }
@@ -131,7 +133,7 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
     void *d;
     unsigned i;
 
-    pa_assert_se(r = pa_memblock_new(pool, pa_frame_size(ss) * 10));
+    pa_assert_se(r = pa_memblock_new(pool, pa_frame_size(ss) * (10 + PADDING)));
     d = pa_memblock_acquire(r);
 
     switch (ss->format) {
@@ -151,6 +153,10 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             u[7] = 0xF0;
             u[8] = 0x20;
             u[9] = 0x21;
+
+            for (i = 10; i < 10 + PADDING; i++)
+                u[i] = 0x00;
+
             break;
         }
 
@@ -168,6 +174,9 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             u[7] = 0xF000;
             u[8] = 0x20;
             u[9] = 0x21;
+
+            for (i = 10; i < 10 + PADDING; i++)
+                u[i] = 0x0000;
             break;
         }
 
@@ -185,6 +194,10 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             u[7] = 0xF0000008;
             u[8] =   0x200009;
             u[9] =   0x21000A;
+
+            for (i = 10; i < 10 + PADDING; i++)
+                u[i] = 0x00000000;
+
             break;
         }
 
@@ -220,8 +233,11 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             u[8] = -0.555f;
             u[9] = -.123f;
 
+            for (i = 10; i < 10 + PADDING; i++)
+                u[i] = 0.0f;
+
             if (ss->format == PA_SAMPLE_FLOAT32RE)
-                for (i = 0; i < 10; i++)
+                for (i = 0; i < 10 + PADDING; i++)
                     u[i] = PA_FLOAT32_SWAP(u[i]);
 
             break;
@@ -241,6 +257,10 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             PA_WRITE24NE(u+21, 0xF00008);
             PA_WRITE24NE(u+24,   0x2009);
             PA_WRITE24NE(u+27,   0x210A);
+
+            for (i = 30; i < 30 + (PADDING * 3); i+=3)
+                PA_WRITE24NE(u+i, 0x000000);
+
             break;
         }
 
