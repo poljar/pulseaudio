@@ -263,6 +263,7 @@ TESTS_norun = \
 		sig2str-test \
 		stripnul \
 		echo-cancel-test \
+		resampler-quality-test \
 		lo-latency-test
 
 # These tests need a running pulseaudio daemon
@@ -486,6 +487,11 @@ resampler_test_SOURCES = tests/resampler-test.c
 resampler_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 resampler_test_CFLAGS = $(AM_CFLAGS)
 resampler_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+
+resampler_quality_test_SOURCES = tests/resampler-quality-test.c
+resampler_quality_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+resampler_quality_test_CFLAGS = $(AM_CFLAGS)
+resampler_quality_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 mix_test_SOURCES = tests/mix-test.c
 mix_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
