@@ -354,7 +354,8 @@ int main(int argc, char *argv[]) {
     pa_assert_se(pool = pa_mempool_new(false, 0));
 
     a.channels = b.channels = 1;
-    a.rate = b.rate = 44100;
+    a.rate = 44100;
+    b.rate = 96000;
     a.format = b.format = PA_SAMPLE_S16LE;
 
     method = PA_RESAMPLER_AUTO;
