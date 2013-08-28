@@ -25,6 +25,8 @@
 #include <getopt.h>
 #include <locale.h>
 #include <math.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include <pulse/pulseaudio.h>
 
@@ -42,6 +44,7 @@
 #include <pulsecore/sconv-s16le.h>
 #include <pulsecore/sconv-s16be.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/sndfile-util.h>
 
 static void help(const char *argv0) {
     printf(_("%s [options]\n\n"
@@ -189,6 +192,75 @@ static const char *signal_to_string(signal_type_t type) {
     return signal_names[type];
 }
 
+static int save_chunk(const char *filename, pa_memchunk *chunk, pa_sample_spec *sample_spec) {
+    SF_INFO sfi;
+    SNDFILE *sndfile = NULL;
+    size_t frame_size;
+    pa_channel_map channel_map;
+
+    union memblock_u {
+        float *f32_memblock;
+        int16_t *s16_memblock;
+    } memblock;
+
+    static sf_count_t (*writef_function)(SNDFILE *_sndfile, const void *ptr,
+                                         sf_count_t frames) = NULL;
+
+    pa_assert(filename);
+    pa_assert(chunk);
+    pa_assert(sample_spec);
+
+    pa_zero(sfi);
+
+    if (pa_sndfile_write_sample_spec(&sfi, sample_spec) < 0) {
+        pa_log(_("Failed to generate sample specification for file."));
+        return -1;
+    }
+
+    sfi.format = SF_FORMAT_WAV;
+    sfi.samplerate = sample_spec->rate;
+    sfi.channels = sample_spec->channels;
+    frame_size = pa_frame_size(sample_spec);
+
+    switch (sample_spec->format) {
+        case PA_SAMPLE_FLOAT32NE:
+            sfi.format |= SF_FORMAT_FLOAT;
+            memblock.f32_memblock = pa_memblock_acquire(chunk->memblock);
+        case PA_SAMPLE_S16LE:                   /* fall trough */
+        case PA_SAMPLE_S16BE:
+            sfi.format |= SF_FORMAT_PCM_16;
+            memblock.s16_memblock = pa_memblock_acquire(chunk->memblock);
+        default:
+            pa_assert_not_reached();
+    }
+
+    if (!(sndfile = sf_open(filename, SFM_WRITE, &sfi))) {
+        pa_log(_("Failed to open audio file."));
+        return -1;
+    }
+
+    pa_channel_map_init_extend(&channel_map, sample_spec->channels, PA_CHANNEL_MAP_DEFAULT);
+
+    if (pa_sndfile_write_channel_map(sndfile, &channel_map) < 0)
+        pa_log(_("Warning: failed to write channel map to file."));
+
+    writef_function = pa_sndfile_writef_function(sample_spec);
+
+    if (sample_spec->format == PA_SAMPLE_FLOAT32) {
+        writef_function(sndfile, memblock.f32_memblock, (sf_count_t) chunk->length / frame_size);
+    } else if (sample_spec->format == PA_SAMPLE_S16NE) {
+        writef_function(sndfile, memblock.s16_memblock, (sf_count_t) chunk->length / frame_size);
+    }
+    else
+        pa_assert_not_reached();
+
+    pa_memblock_release(chunk->memblock);
+
+    sf_close(sndfile);
+
+    return 0;
+}
+
 int main(int argc, char *argv[]) {
     int ret = 1, c;
     pa_mempool *pool = NULL;
@@ -312,7 +384,7 @@ int main(int argc, char *argv[]) {
         chirp_chunk(&input_chunk, pool, &a, freq0, freq1, signal_length, signal_type);
 
     /* TODO: run resampler here and save the resampled chunk */
-    pa_memchunk_dump_to_file(&input_chunk, "sweep_sine.bin");
+    save_chunk("test.wav", &input_chunk, &a);
 
     pa_memblock_unref(input_chunk.memblock);
 
