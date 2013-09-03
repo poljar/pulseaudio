@@ -286,6 +286,7 @@ int main(int argc, char *argv[]) {
         {"signal-length",         1, NULL, ARG_SIGNAL_LENGTH},
         {"resample-method",       1, NULL, ARG_RESAMPLE_METHOD},
         {"signal-type",           1, NULL, ARG_SIGNAL_TYPE},
+        {"base-frequency",        1, NULL, ARG_BASE_FREQ},
         {"dump-resample-methods", 0, NULL, ARG_DUMP_RESAMPLE_METHODS},
         {NULL,                    0, NULL, 0}
     };
