@@ -241,14 +241,9 @@ static int save_chunk(const char *filename, pa_memchunk *chunk, pa_sample_spec *
         return -1;
     }
 
-    pa_channel_map_init_extend(&channel_map, sample_spec->channels, PA_CHANNEL_MAP_DEFAULT);
-
-    if (pa_sndfile_write_channel_map(sndfile, &channel_map) < 0)
-        pa_log(_("Warning: failed to write channel map to file."));
-
     writef_function = pa_sndfile_writef_function(sample_spec);
 
-    if (sample_spec->format == PA_SAMPLE_FLOAT32) {
+    if (sample_spec->format == PA_SAMPLE_FLOAT32NE) {
         writef_function(sndfile, memblock.f32_memblock, (sf_count_t) chunk->length / frame_size);
     } else if (sample_spec->format == PA_SAMPLE_S16NE) {
         writef_function(sndfile, memblock.s16_memblock, (sf_count_t) chunk->length / frame_size);
@@ -305,7 +300,7 @@ int main(int argc, char *argv[]) {
     a.channels = b.channels = 1;
     a.rate = 96000;
     b.rate = 44100;
-    a.format = b.format = PA_SAMPLE_FLOAT32;
+    a.format = b.format = PA_SAMPLE_FLOAT32NE;
 
     method = PA_RESAMPLER_AUTO;
 
