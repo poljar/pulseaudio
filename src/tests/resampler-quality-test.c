@@ -226,10 +226,12 @@ static int save_chunk(const char *filename, pa_memchunk *chunk, pa_sample_spec *
         case PA_SAMPLE_FLOAT32NE:
             sfi.format |= SF_FORMAT_FLOAT;
             memblock.f32_memblock = pa_memblock_acquire(chunk->memblock);
+            break;
         case PA_SAMPLE_S16LE:                   /* fall trough */
         case PA_SAMPLE_S16BE:
             sfi.format |= SF_FORMAT_PCM_16;
             memblock.s16_memblock = pa_memblock_acquire(chunk->memblock);
+            break;
         default:
             pa_assert_not_reached();
     }
