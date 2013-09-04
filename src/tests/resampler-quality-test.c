@@ -196,7 +196,6 @@ static int save_chunk(const char *filename, pa_memchunk *chunk, pa_sample_spec *
     SF_INFO sfi;
     SNDFILE *sndfile = NULL;
     size_t frame_size;
-    pa_channel_map channel_map;
 
     union memblock_u {
         float *f32_memblock;
