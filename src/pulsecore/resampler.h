@@ -23,20 +23,14 @@
 ***/
 
 #include <pulse/sample.h>
+#include <pulsecore/sconv.h>
+#include <pulsecore/remap.h>
 #include <pulse/channelmap.h>
 #include <pulsecore/memblock.h>
 #include <pulsecore/memchunk.h>
 
-typedef struct pa_resampler pa_resampler;
 typedef struct pa_resampler_impl pa_resampler_impl;
-
-struct pa_resampler_impl {
-    void (*free)(pa_resampler *r);
-    void (*update_rates)(pa_resampler *r);
-    void (*resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
-    void (*reset)(pa_resampler *r);
-    void *data;
-};
+typedef struct pa_resampler pa_resampler;
 
 typedef enum pa_resample_method {
     PA_RESAMPLER_INVALID                 = -1,
@@ -63,6 +57,44 @@ typedef enum pa_resample_flags {
     PA_RESAMPLER_NO_REMIX      = 0x0004U,
     PA_RESAMPLER_NO_LFE        = 0x0008U
 } pa_resample_flags_t;
+
+struct pa_resampler_impl {
+    void (*free)(pa_resampler *r);
+    void (*update_rates)(pa_resampler *r);
+    void (*resample)(pa_resampler *r, const pa_memchunk *in, unsigned in_samples, pa_memchunk *out, unsigned *out_samples);
+    void (*reset)(pa_resampler *r);
+    void *data;
+};
+
+struct pa_resampler {
+    pa_resample_method_t method;
+    pa_resample_flags_t flags;
+
+    pa_sample_spec i_ss, o_ss;
+    pa_channel_map i_cm, o_cm;
+    size_t i_fz, o_fz, w_sz;
+    pa_mempool *mempool;
+
+    pa_memchunk to_work_format_buf;
+    pa_memchunk remap_buf;
+    pa_memchunk resample_buf;
+    pa_memchunk from_work_format_buf;
+    unsigned to_work_format_buf_samples;
+    size_t remap_buf_size;
+    unsigned resample_buf_samples;
+    unsigned from_work_format_buf_samples;
+    bool remap_buf_contains_leftover_data;
+
+    pa_sample_format_t work_format;
+
+    pa_convert_func_t to_work_format_func;
+    pa_convert_func_t from_work_format_func;
+
+    pa_remap_t remap;
+    bool map_required;
+
+    pa_resampler_impl impl;
+};
 
 pa_resampler* pa_resampler_new(
         pa_mempool *pool,
@@ -108,9 +140,19 @@ const char *pa_resample_method_to_string(pa_resample_method_t m);
 /* Return 1 when the specified resampling method is supported */
 int pa_resample_method_supported(pa_resample_method_t m);
 
+/* Save leftover frames for next run of resampler */
+void pa_resampler_save_leftover(pa_resampler *r, void *buf, size_t len);
+
 const pa_channel_map* pa_resampler_input_channel_map(pa_resampler *r);
 const pa_sample_spec* pa_resampler_input_sample_spec(pa_resampler *r);
 const pa_channel_map* pa_resampler_output_channel_map(pa_resampler *r);
 const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r);
+
+/* Implementation specific init functions */
+int pa_resampler_ffmpeg_init(pa_resampler *r);
+int pa_resampler_libsamplerate_init(pa_resampler *r);
+int pa_resampler_peaks_init(pa_resampler *r);
+int pa_resampler_speex_init(pa_resampler *r);
+int pa_resampler_trivial_init(pa_resampler*r);
 
 #endif
