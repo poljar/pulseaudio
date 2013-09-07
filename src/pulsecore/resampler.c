@@ -110,6 +110,11 @@ static int (* const init_table[])(pa_resampler*r) = {
 #else
     [PA_RESAMPLER_SOXR]                    = NULL,
 #endif
+#ifdef HAVE_LIBSWRESAMPLE
+    [PA_RESAMPLER_LSWR]                   = pa_resampler_lswr_init,
+#else
+    [PA_RESAMPLER_LSWR]                   = NULL,
+#endif
 };
 
 static pa_resample_method_t choose_auto_resampler(pa_resample_flags_t flags) {
@@ -153,6 +158,7 @@ static pa_resample_method_t pa_resampler_fix_method(
                 break;
             }
                                      /* Else fall through */
+        case PA_RESAMPLER_LSWR:
         case PA_RESAMPLER_SOXR:
         case PA_RESAMPLER_FFMPEG:
             if (flags & PA_RESAMPLER_VARIABLE_RATE) {
@@ -261,6 +267,7 @@ static pa_sample_format_t pa_resampler_choose_work_format(
                                                 /* Else fall trough */
         case PA_RESAMPLER_PEAKS:
         case PA_RESAMPLER_SOXR:
+        case PA_RESAMPLER_LSWR:
             if (a == PA_SAMPLE_S16NE || b == PA_SAMPLE_S16NE)
                 work_format = PA_SAMPLE_S16NE;
             else if (sample_format_more_precise(a, PA_SAMPLE_S16NE) ||
@@ -563,7 +570,8 @@ static const char * const resample_methods[] = {
     "auto",
     "copy",
     "peaks",
-    "soxr"
+    "soxr",
+    "lswr"
 };
 
 const char *pa_resample_method_to_string(pa_resample_method_t m) {
@@ -593,6 +601,11 @@ int pa_resample_method_supported(pa_resample_method_t m) {
 
 #ifndef HAVE_SOXR
     if (m == PA_RESAMPLER_SOXR)
+        return 0;
+#endif
+
+#ifndef HAVE_LIBSWRESAMPLE
+    if (m == PA_RESAMPLER_LSWR)
         return 0;
 #endif
 

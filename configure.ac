@@ -1095,6 +1095,21 @@ AS_IF([test "x$enable_soxr" = "xyes" && test "x$HAVE_SOXR" = "x0"],
 AM_CONDITIONAL([HAVE_SOXR], [test "x$HAVE_SOXR" = x1])
 AS_IF([test "x$HAVE_SOXR" = "x1"], AC_DEFINE([HAVE_SOXR], 1, [Have soxr]))
 
+#### libswresample support (optional) ####
+
+AC_ARG_ENABLE([libswresample],
+   AS_HELP_STRING([--disable-libswresample],[Disable optional libswresample support]))
+
+AS_IF([test "x$enable_libswresample" != "xno"],
+    [PKG_CHECK_MODULES(LIBSWRESAMPLE, libswresample, HAVE_LIBSWRESAMPLE=1, HAVE_LIBSWRESAMPLE=0)],
+    HAVE_LIBSWRESAMPLE=0)
+
+AS_IF([test "x$enable_libswresample" = "xyes" && test "x$HAVE_LIBSWRESAMPLE" = "x0"],
+    [AC_MSG_ERROR([*** libswresample not found])])
+
+AM_CONDITIONAL([HAVE_LIBSWRESAMPLE], [test "x$HAVE_LIBSWRESAMPLE" = x1])
+AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBSWRESAMPLE], 1, [Have libswresample]))
+
 #### Xen support (optional) ####
 
 AC_ARG_ENABLE([xen],
@@ -1415,6 +1430,7 @@ AS_IF([test "x$HAVE_ORC" = "xyes"], ENABLE_ORC=yes, ENABLE_ORC=no)
 AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"], ENABLE_ADRIAN_EC=yes, ENABLE_ADRIAN_EC=no)
 AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
 AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
+AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], ENABLE_LIBSWRESAMPLE=yes, ENABLE_LIBSWRESAMPLE=no)
 AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
 AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
 AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
@@ -1469,6 +1485,7 @@ echo "
     Enable Adrian echo canceller:  ${ENABLE_ADRIAN_EC}
     Enable speex (resampler, AEC): ${ENABLE_SPEEX}
     Enable soxr:                   ${ENABLE_SOXR}
+    Enable libswresample:          ${ENABLE_LIBSWRESAMPLE}
     Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
     Enable gcov coverage:          ${ENABLE_GCOV}
     Enable unit tests:             ${ENABLE_TESTS}
