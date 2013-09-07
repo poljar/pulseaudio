@@ -48,6 +48,7 @@ typedef enum pa_resample_method {
     PA_RESAMPLER_AUTO, /* automatic select based on sample format */
     PA_RESAMPLER_COPY,
     PA_RESAMPLER_PEAKS,
+    PA_RESAMPLER_SOXR,
     PA_RESAMPLER_MAX
 } pa_resample_method_t;
 
@@ -152,6 +153,7 @@ const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r);
 int pa_resampler_ffmpeg_init(pa_resampler *r);
 int pa_resampler_libsamplerate_init(pa_resampler *r);
 int pa_resampler_peaks_init(pa_resampler *r);
+int pa_resampler_soxr_init(pa_resampler *r);
 int pa_resampler_speex_init(pa_resampler *r);
 int pa_resampler_trivial_init(pa_resampler*r);
 
