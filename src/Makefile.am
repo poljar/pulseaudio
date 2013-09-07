@@ -964,6 +964,12 @@ if HAVE_SIMPLEDB
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/database-simple.c
 endif
 
+if HAVE_SOXR
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/soxr.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(SOXR_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(SOXR_LIBS)
+endif
+
 if HAVE_SPEEX
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/speex.c
 libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSPEEX_CFLAGS)
