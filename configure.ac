@@ -1145,6 +1145,23 @@ AC_SUBST(HAVE_SYSTEMD)
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$HAVE_SYSTEMD" = x1])
 AS_IF([test "x$HAVE_SYSTEMD" = "x1"], AC_DEFINE([HAVE_SYSTEMD], 1, [Have SYSTEMD?]))
 
+#### journal support (optional) ####
+
+AC_ARG_ENABLE([journal],
+    AS_HELP_STRING([--disable-journal],[Disable optional journal support]))
+
+AS_IF([test "x$enable_journal" != "xno"],
+    [PKG_CHECK_MODULES(JOURNAL, [ libsystemd-journal ], HAVE_JOURNAL=1, HAVE_JOURNAL=0)],
+    HAVE_JOURNAL=0)
+
+AS_IF([test "x$enable_journal" = "xyes" && test "x$HAVE_JOURNAL" = "x0"],
+    [AC_MSG_ERROR([*** Needed journal support not found])])
+
+AC_SUBST(HAVE_JOURNAL)
+AM_CONDITIONAL([HAVE_JOURNAL], [test "x$HAVE_JOURNAL" = x1])
+AS_IF([test "x$HAVE_JOURNAL" = "x1"], AC_DEFINE([HAVE_JOURNAL], 1, [Have JOURNAL?]))
+
+
 #### Build and Install man pages ####
 
 AC_ARG_ENABLE([manpages],
@@ -1389,6 +1406,7 @@ AS_IF([test "x$HAVE_XEN" = "x1"], ENABLE_XEN=yes, ENABLE_XEN=no)
 AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
 AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
 AS_IF([test "x$HAVE_SYSTEMD" = "x1"], ENABLE_SYSTEMD=yes, ENABLE_SYSTEMD=no)
+AS_IF([test "x$HAVE_JOURNAL" = "x1"], ENABLE_JOURNAL=yes, ENABLE_JOURNAL=no)
 AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
@@ -1444,6 +1462,7 @@ echo "
     Enable udev:                   ${ENABLE_UDEV}
       Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
     Enable systemd login:          ${ENABLE_SYSTEMD}
+    Enable systemd journal:        ${ENABLE_JOURNAL}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}
