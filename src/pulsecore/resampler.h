@@ -50,6 +50,7 @@ typedef enum pa_resample_method {
     PA_RESAMPLER_PEAKS,
     PA_RESAMPLER_SOXR,
     PA_RESAMPLER_LSWR,
+    PA_RESAMPLER_LAVR,
     PA_RESAMPLER_MAX
 } pa_resample_method_t;
 
@@ -152,6 +153,7 @@ const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r);
 
 /* Implementation specific init functions */
 int pa_resampler_ffmpeg_init(pa_resampler *r);
+int pa_resampler_lavr_init(pa_resampler *r);
 int pa_resampler_libsamplerate_init(pa_resampler *r);
 int pa_resampler_lswr_init(pa_resampler *r);
 int pa_resampler_peaks_init(pa_resampler *r);
