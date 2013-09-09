@@ -1110,6 +1110,21 @@ AS_IF([test "x$enable_libswresample" = "xyes" && test "x$HAVE_LIBSWRESAMPLE" = "
 AM_CONDITIONAL([HAVE_LIBSWRESAMPLE], [test "x$HAVE_LIBSWRESAMPLE" = x1])
 AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBSWRESAMPLE], 1, [Have libswresample]))
 
+#### libavresample support (optional) ####
+
+AC_ARG_ENABLE([libavresample],
+   AS_HELP_STRING([--disable-libavresample],[Disable optional libavresample support]))
+
+AS_IF([test "x$enable_libavresample" != "xno"],
+    [PKG_CHECK_MODULES(LIBAVRESAMPLE, libavresample, HAVE_LIBAVRESAMPLE=1, HAVE_LIBAVRESAMPLE=0)],
+    HAVE_LIBAVRESAMPLE=0)
+
+AS_IF([test "x$enable_libavresample" = "xyes" && test "x$HAVE_LIBAVRESAMPLE" = "x0"],
+    [AC_MSG_ERROR([*** libavresample not found])])
+
+AM_CONDITIONAL([HAVE_LIBAVRESAMPLE], [test "x$HAVE_LIBAVRESAMPLE" = x1])
+AS_IF([test "x$HAVE_LIBAVRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBAVRESAMPLE], 1, [Have libavresample]))
+
 #### Xen support (optional) ####
 
 AC_ARG_ENABLE([xen],
@@ -1431,6 +1446,7 @@ AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"], ENABLE_ADRIAN_EC=yes, ENABLE_ADRIAN_EC=n
 AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
 AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
 AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], ENABLE_LIBSWRESAMPLE=yes, ENABLE_LIBSWRESAMPLE=no)
+AS_IF([test "x$HAVE_LIBAVRESAMPLE" = "x1"], ENABLE_LIBAVRESAMPLE=yes, ENABLE_LIBAVRESAMPLE=no)
 AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
 AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
 AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
@@ -1486,6 +1502,7 @@ echo "
     Enable speex (resampler, AEC): ${ENABLE_SPEEX}
     Enable soxr:                   ${ENABLE_SOXR}
     Enable libswresample:          ${ENABLE_LIBSWRESAMPLE}
+    Enable libavresample:          ${ENABLE_LIBAVRESAMPLE}
     Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
     Enable gcov coverage:          ${ENABLE_GCOV}
     Enable unit tests:             ${ENABLE_TESTS}

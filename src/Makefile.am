@@ -976,6 +976,12 @@ libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSPEEX_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSPEEX_LIBS)
 endif
 
+if HAVE_LIBAVRESAMPLE
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/lavr.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBAVRESAMPLE_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBAVRESAMPLE_LIBS)
+endif
+
 if HAVE_LIBSAMPLERATE
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/libsamplerate.c
 libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSAMPLERATE_CFLAGS)
