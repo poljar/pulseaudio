@@ -299,8 +299,8 @@ int main(int argc, char *argv[]) {
     a.channels = b.channels = 1;
     a.rate = 96000;
     b.rate = 44100;
-    a.format = PA_SAMPLE_S16NE;
-    b.format = PA_SAMPLE_S16NE;
+    a.format = PA_SAMPLE_FLOAT32;
+    b.format = PA_SAMPLE_FLOAT32;
 
     method = PA_RESAMPLER_AUTO;
 
