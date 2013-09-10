@@ -54,7 +54,7 @@ static void help(const char *argv0) {
              "      --format=SAMPLEFORMAT           From sample type (defaults to float32ne)\n"
              "      --to-rate=SAMPLERATE            To sample rate in Hz (defaults to 44100)\n"
              "      --resample-method=METHOD        Resample method (defaults to auto)\n"
-             "      --signal-length=SECONDS         Length of the generated signal (defaults to 8)\n"
+             "      --signal-length=SECONDS         Length of the generated signal in seconds (defaults to 8)\n"
              "      --signal-type=SIGNALTYPE        Type of the generated signal (defaults to 440Hz sine)\n"
              "      --base-frequency=BASEFREQUENCY  Start frequency of the chirp or frequency of the sine (defaults to 440Hz)\n"
              "      --stop-frequency=STOPFREQUENCY  Stop frequency of the chirp signal (defaults to 48000Hz)\n"
