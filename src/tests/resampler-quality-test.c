@@ -17,6 +17,11 @@
   USA.
 ***/
 
+/***
+  The SNR measuring part was mostly taken and adapted from libsamplerates
+  own test function. Credit goes to Erik de Castro Lopo.
+***/
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -28,8 +33,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <pulse/pulseaudio.h>
+#ifdef HAVE_FFTW
+#include <fftw3.h>
+#endif
 
+#include <pulse/pulseaudio.h>
 #include <pulse/rtclock.h>
 #include <pulse/sample.h>
 #include <pulse/volume.h>
@@ -45,6 +53,8 @@
 #include <pulsecore/sconv-s16be.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/sndfile-util.h>
+
+#define MAX_PEAKS 10
 
 static void help(const char *argv0) {
     printf(_("%s [options]\n\n"
@@ -95,6 +105,154 @@ static void dump_resample_methods(void) {
             printf("%s\n", pa_resample_method_to_string(i));
 
 }
+
+#ifdef HAVE_FFTW
+typedef struct {
+    float peak ;
+    int index ;
+} PEAK_DATA ;
+
+static void linear_smooth (float *mag, PEAK_DATA *larger, PEAK_DATA *smaller) {
+    int k ;
+
+    if (smaller->index < larger->index) {
+        for (k = smaller->index + 1; k < larger->index; k++)
+            mag[k] = (mag[k] < mag[k - 1]) ? 0.999 * mag[k - 1] : mag[k] ;
+    } else
+        for (k = smaller->index - 1; k >= larger->index; k--)
+            mag[k] = (mag[k] < mag[k + 1]) ? 0.999 * mag[k + 1] : mag[k] ;
+
+} /* linear_smooth */
+
+static void smooth_mag_spectrum (float *mag, int len) {
+    PEAK_DATA peaks[2] ;
+
+    int k ;
+
+    memset(peaks, 0, sizeof(peaks)) ;
+
+    /* Find first peak. */
+    for (k = 1 ;k < len - 1 ;k++) {
+        if (mag[k - 1] < mag[k] && mag[k] >= mag[k + 1]) {
+            peaks[0].peak = mag[k];
+            peaks[0].index = k;
+            break;
+        }
+    }
+
+    /* Find subsequent peaks ans smooth between peaks. */
+    for (k = peaks[0].index + 1; k < len - 1; k++) {
+        if (mag[k - 1] < mag[k] && mag[k] >= mag[k + 1]) {
+            peaks[1].peak = mag [k];
+            peaks[1].index = k;
+
+            if (peaks[1].peak > peaks[0].peak)
+                linear_smooth (mag, &peaks[1], &peaks[0]) ;
+            else
+                linear_smooth (mag, &peaks[0], &peaks[1]) ;
+            peaks[0] = peaks[1] ;
+        }
+    }
+
+} /* smooth_mag_spectrum */
+
+static int peak_compare(const void *vp1, const void *vp2) {
+    const PEAK_DATA *peak1, *peak2;
+
+    peak1 = (const PEAK_DATA*) vp1;
+    peak2 = (const PEAK_DATA*) vp2;
+
+    return (peak1->peak < peak2->peak) ? 1 : -1;
+} /* peak_compare */
+
+static float find_snr(const float *magnitude, int len) {
+    PEAK_DATA peaks[MAX_PEAKS];
+
+    int k, peak_count = 0;
+    double  snr;
+
+    memset(peaks, 0, sizeof (peaks));
+
+    /* Find the MAX_PEAKS largest peaks. */
+    for (k = 1 ; k < len - 1 ; k++) {
+        if (magnitude [k - 1] < magnitude [k] && magnitude [k] >= magnitude [k + 1]) {
+            if (peak_count < MAX_PEAKS) {
+                peaks[peak_count].peak = magnitude[k];
+                peaks[peak_count].index = k;
+                peak_count++;
+                qsort (peaks, peak_count, sizeof (PEAK_DATA), peak_compare);
+            } else if (magnitude [k] > peaks [MAX_PEAKS - 1].peak) {
+                peaks [MAX_PEAKS - 1].peak = magnitude [k] ;
+                peaks [MAX_PEAKS - 1].index = k ;
+                qsort (peaks, MAX_PEAKS, sizeof (PEAK_DATA), peak_compare) ;
+            }
+        }
+    }
+
+    /* Sort the peaks. */
+    qsort (peaks, peak_count, sizeof (PEAK_DATA), peak_compare) ;
+
+    snr = peaks[0].peak;
+    for (k = 1 ; k < peak_count ; k++)
+        if (fabs (snr - peaks [k].peak) > 10.0)
+            return fabs (peaks [k].peak);
+
+    return snr ;
+} /* find_snr */
+
+static void measure_snr(pa_memchunk *chunk, pa_mempool *pool) {
+    fftwf_plan plan = NULL;
+    float *data, *fft_data;
+    double maxval, snr;
+    uint64_t k;
+
+    unsigned int n_samples = chunk->length / sizeof(float);
+    data = pa_memblock_acquire(chunk->memblock);
+    fft_data = pa_xnew(float, chunk->length);
+
+    plan = fftwf_plan_r2r_1d(n_samples, data, fft_data, FFTW_R2HC, FFTW_ESTIMATE | FFTW_PRESERVE_INPUT);
+
+    if (plan == NULL) {
+        pa_log_error("Create plan failed");
+        return;
+    }
+
+    fftwf_execute(plan);
+
+    fftwf_destroy_plan(plan);
+
+    /* (k < N/2 rounded up) */
+    maxval = 0.0 ;
+    for (k = 1 ; k < n_samples / 2 ; k++) {
+        fft_data[k] = sqrt(fft_data[k] * fft_data[k] + fft_data[n_samples - k - 1] * fft_data[n_samples - k - 1]);
+        maxval = (maxval < fft_data[k]) ? fft_data[k] : maxval;
+    }
+
+    memset(fft_data + n_samples / 2, 0, n_samples / 2 * sizeof(fft_data[0])) ;
+
+    /* Don't care about DC component. Make it zero. */
+    fft_data[0] = 0.0 ;
+
+    /* log magnitude. */
+    for (k = 0 ; k < n_samples ; k++) {
+        fft_data[k] = fft_data[k] / maxval ;
+        fft_data[k] = (fft_data[k] < 1e-15) ? -200.0 : 20.0 * log10(fft_data[k]);
+    }
+
+    pa_memblock_release(chunk->memblock);
+    smooth_mag_spectrum(fft_data, n_samples / 2);
+    snr = find_snr(fft_data, n_samples);
+    pa_xfree(fft_data);
+
+    pa_log("SNR: %f", snr);
+    return;
+}
+#else
+static void measure_snr(pa_memchunk *chunk, pa_mempool *pool) {
+    pa_log_warn("You need FFTW to measure the SNR ratio");
+    return;
+}
+#endif
 
 static void chirp_chunk(pa_memchunk *chunk, pa_mempool *pool, pa_sample_spec *sample_spec,
                         unsigned int freq0, unsigned int freq1, unsigned int seconds, signal_type_t type) {
@@ -381,6 +539,7 @@ int main(int argc, char *argv[]) {
     else
         chirp_chunk(&input_chunk, pool, &a, freq0, freq1, signal_length, signal_type);
 
+    measure_snr(&input_chunk, pool);
     /* TODO: run resampler here and save the resampled chunk */
     save_chunk("test.wav", &input_chunk, &a);
 

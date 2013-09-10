@@ -1064,6 +1064,7 @@ AS_IF([test "x$with_fftw" = "xyes" && test "x$HAVE_FFTW" = "x0"],
     [AC_MSG_ERROR([*** FFTW support not found])])
 
 AM_CONDITIONAL([HAVE_FFTW], [test "x$HAVE_FFTW" = "x1"])
+AS_IF([test "x$HAVE_FFTW" = "x1"], AC_DEFINE([HAVE_FFTW], 1, [Have FFTW]))
 
 #### speex (optional) ####
 
