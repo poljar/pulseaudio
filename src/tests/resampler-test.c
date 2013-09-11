@@ -387,7 +387,7 @@ int main(int argc, char *argv[]) {
     pa_mempool *pool = NULL;
     pa_sample_spec a, b;
     int ret = 1, c;
-    bool all_formats = true;
+    bool all_formats = true, all_methods = true;
     pa_resample_method_t method;
     int seconds;
 
@@ -454,7 +454,7 @@ int main(int argc, char *argv[]) {
 
             case ARG_FROM_SAMPLEFORMAT:
                 a.format = pa_parse_sample_format(optarg);
-                all_formats = false;
+                all_formats = all_methods = false;
                 break;
 
             case ARG_FROM_SAMPLERATE:
@@ -467,7 +467,7 @@ int main(int argc, char *argv[]) {
 
             case ARG_TO_SAMPLEFORMAT:
                 b.format = pa_parse_sample_format(optarg);
-                all_formats = false;
+                all_formats = all_methods = false;
                 break;
 
             case ARG_TO_SAMPLERATE:
@@ -485,6 +485,7 @@ int main(int argc, char *argv[]) {
                     goto quit;
                 }
                 method = pa_parse_resample_method(optarg);
+                all_methods = false;
                 break;
 
             default:
@@ -497,8 +498,11 @@ int main(int argc, char *argv[]) {
 
     if (!all_formats)
         single_format_test(pool, method, &a, &b, seconds);
-    else
+    else if (!all_methods)
         all_formats_test(pool, method, &a, &b);
+    else
+        for (method = 0; method < PA_RESAMPLER_MAX; method++)
+            all_formats_test(pool, method, &a, &b);
 
  quit:
     if (pool)
