@@ -318,6 +318,71 @@ static void dump_resample_methods(void) {
 
 }
 
+static void single_format_test(pa_mempool *pool, pa_resample_method_t method, pa_sample_spec *a, pa_sample_spec *b, int seconds) {
+    pa_resampler *resampler;
+    pa_memchunk i, j;
+    pa_usec_t ts;
+
+    pa_log_debug(_("Compilation CFLAGS: %s"), PA_CFLAGS);
+    pa_log_debug(_("=== %d seconds: %d Hz %d ch (%s) -> %d Hz %d ch (%s)"), seconds,
+               a->rate, a->channels, pa_sample_format_to_string(a->format),
+               b->rate, b->channels, pa_sample_format_to_string(b->format));
+
+    ts = pa_rtclock_now();
+    pa_assert_se(resampler = pa_resampler_new(pool, a, NULL, b, NULL, method, 0));
+    pa_log_info("init: %llu", (long long unsigned)(pa_rtclock_now() - ts));
+
+    i.memblock = pa_memblock_new(pool, pa_usec_to_bytes(1*PA_USEC_PER_SEC, a));
+
+    ts = pa_rtclock_now();
+    i.length = pa_memblock_get_length(i.memblock);
+    i.index = 0;
+
+    while (seconds--) {
+        pa_resampler_run(resampler, &i, &j);
+        pa_memblock_unref(j.memblock);
+    }
+
+    pa_log_info("resampling: %llu", (long long unsigned)(pa_rtclock_now() - ts));
+    pa_memblock_unref(i.memblock);
+
+    pa_resampler_free(resampler);
+}
+
+static void all_formats_test(pa_mempool *pool, pa_resample_method_t method, pa_sample_spec *a, pa_sample_spec *b) {
+    for (a->format = 0; a->format < PA_SAMPLE_MAX; a->format ++) {
+        for (b->format = 0; b->format < PA_SAMPLE_MAX; b->format ++) {
+            pa_resampler *forth, *back;
+            pa_memchunk i, j, k;
+
+            pa_log_debug("=== %s -> %s -> %s -> /2",
+                       pa_sample_format_to_string(a->format),
+                       pa_sample_format_to_string(b->format),
+                       pa_sample_format_to_string(a->format));
+
+            pa_assert_se(forth = pa_resampler_new(pool, a, NULL, b, NULL, method, 0));
+            pa_assert_se(back = pa_resampler_new(pool, b, NULL, a, NULL, method, 0));
+
+            i.memblock = generate_block(pool, a);
+            i.length = pa_memblock_get_length(i.memblock);
+            i.index = 0;
+            pa_resampler_run(forth, &i, &j);
+            pa_resampler_run(back, &j, &k);
+
+            dump_block("before", a, &i);
+            dump_block("after", b, &j);
+            dump_block("reverse", a, &k);
+
+            pa_memblock_unref(i.memblock);
+            pa_memblock_unref(j.memblock);
+            pa_memblock_unref(k.memblock);
+
+            pa_resampler_free(forth);
+            pa_resampler_free(back);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     pa_mempool *pool = NULL;
     pa_sample_spec a, b;
@@ -430,69 +495,10 @@ int main(int argc, char *argv[]) {
     ret = 0;
     pa_assert_se(pool = pa_mempool_new(false, 0));
 
-    if (!all_formats) {
-
-        pa_resampler *resampler;
-        pa_memchunk i, j;
-        pa_usec_t ts;
-
-        pa_log_debug(_("Compilation CFLAGS: %s"), PA_CFLAGS);
-        pa_log_debug(_("=== %d seconds: %d Hz %d ch (%s) -> %d Hz %d ch (%s)"), seconds,
-                   a.rate, a.channels, pa_sample_format_to_string(a.format),
-                   b.rate, b.channels, pa_sample_format_to_string(b.format));
-
-        ts = pa_rtclock_now();
-        pa_assert_se(resampler = pa_resampler_new(pool, &a, NULL, &b, NULL, method, 0));
-        pa_log_info("init: %llu", (long long unsigned)(pa_rtclock_now() - ts));
-
-        i.memblock = pa_memblock_new(pool, pa_usec_to_bytes(1*PA_USEC_PER_SEC, &a));
-
-        ts = pa_rtclock_now();
-        i.length = pa_memblock_get_length(i.memblock);
-        i.index = 0;
-        while (seconds--) {
-            pa_resampler_run(resampler, &i, &j);
-            pa_memblock_unref(j.memblock);
-        }
-        pa_log_info("resampling: %llu", (long long unsigned)(pa_rtclock_now() - ts));
-        pa_memblock_unref(i.memblock);
-
-        pa_resampler_free(resampler);
-
-        goto quit;
-    }
-
-    for (a.format = 0; a.format < PA_SAMPLE_MAX; a.format ++) {
-        for (b.format = 0; b.format < PA_SAMPLE_MAX; b.format ++) {
-            pa_resampler *forth, *back;
-            pa_memchunk i, j, k;
-
-            pa_log_debug("=== %s -> %s -> %s -> /2",
-                       pa_sample_format_to_string(a.format),
-                       pa_sample_format_to_string(b.format),
-                       pa_sample_format_to_string(a.format));
-
-            pa_assert_se(forth = pa_resampler_new(pool, &a, NULL, &b, NULL, method, 0));
-            pa_assert_se(back = pa_resampler_new(pool, &b, NULL, &a, NULL, method, 0));
-
-            i.memblock = generate_block(pool, &a);
-            i.length = pa_memblock_get_length(i.memblock);
-            i.index = 0;
-            pa_resampler_run(forth, &i, &j);
-            pa_resampler_run(back, &j, &k);
-
-            dump_block("before", &a, &i);
-            dump_block("after", &b, &j);
-            dump_block("reverse", &a, &k);
-
-            pa_memblock_unref(i.memblock);
-            pa_memblock_unref(j.memblock);
-            pa_memblock_unref(k.memblock);
-
-            pa_resampler_free(forth);
-            pa_resampler_free(back);
-        }
-    }
+    if (!all_formats)
+        single_format_test(pool, method, &a, &b, seconds);
+    else
+        all_formats_test(pool, method, &a, &b);
 
  quit:
     if (pool)
