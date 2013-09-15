@@ -25,12 +25,6 @@
 
 #include <string.h>
 
-#ifdef HAVE_LIBSAMPLERATE
-#endif
-
-#ifdef HAVE_SPEEX
-#endif
-
 #include <pulse/xmalloc.h>
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
