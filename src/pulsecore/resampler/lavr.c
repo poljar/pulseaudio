@@ -28,7 +28,7 @@
 #include <libavutil/opt.h>
 #include <libavutil/samplefmt.h>
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 static int lavr_init(pa_resampler *r);
 static void lavr_free(pa_resampler *r);
