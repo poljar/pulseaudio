@@ -93,13 +93,11 @@ int pa_resampler_lswr_init(pa_resampler *r) {
         return -1;
 
     switch (r->work_format) {
-        case PA_SAMPLE_S16BE:
-        case PA_SAMPLE_S16LE:
+        case PA_SAMPLE_S16NE:
             format = AV_SAMPLE_FMT_S16;
             break;
 
-        case PA_SAMPLE_FLOAT32BE:
-        case PA_SAMPLE_FLOAT32LE:
+        case PA_SAMPLE_FLOAT32NE:
             format = AV_SAMPLE_FMT_FLT;
             break;
 
