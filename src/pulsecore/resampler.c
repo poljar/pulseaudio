@@ -106,9 +106,9 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_COPY]                    = copy_init,
     [PA_RESAMPLER_PEAKS]                   = pa_resampler_peaks_init,
 #ifdef HAVE_SOXR
-    [PA_RESAMPLER_SOXR]                   = pa_resampler_soxr_init,
+    [PA_RESAMPLER_SOXR]                    = pa_resampler_soxr_init,
 #else
-    [PA_RESAMPLER_SOXR]                   = NULL,
+    [PA_RESAMPLER_SOXR]                    = NULL,
 #endif
 };
 
