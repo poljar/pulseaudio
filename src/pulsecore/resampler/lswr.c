@@ -23,7 +23,7 @@
 #include <config.h>
 #endif
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 #include <libswresample/swresample.h>
 #include <libavutil/opt.h>
