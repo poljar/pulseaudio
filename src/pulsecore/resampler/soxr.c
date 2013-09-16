@@ -99,16 +99,15 @@ int pa_resampler_soxr_init(pa_resampler *r) {
 
     pa_assert(r);
 
-    /* sample formats supported by soxr -> 0:float32 1:float64 2:int32 3:int16 */
     switch (r->work_format) {
-        case PA_SAMPLE_S16BE:
-        case PA_SAMPLE_S16LE:
-            format = 3;
+        case PA_SAMPLE_S16NE:
+            format = SOXR_INT16;
             break;
-        case PA_SAMPLE_FLOAT32BE:
-        case PA_SAMPLE_FLOAT32LE:
-            format = 0;
+
+        case PA_SAMPLE_FLOAT32NE:
+            format = SOXR_FLOAT32;
             break;
+
         default:
             pa_assert_not_reached();
     }
