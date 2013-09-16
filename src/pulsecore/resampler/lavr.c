@@ -30,14 +30,6 @@
 
 #include "pulsecore/resampler.h"
 
-static int lavr_init(pa_resampler *r);
-static void lavr_free(pa_resampler *r);
-static void lavr_resample(pa_resampler *r, const pa_memchunk *input,
-                          unsigned in_n_frames, pa_memchunk *output,
-                          unsigned *out_n_frames);
-static void lavr_udpate_rates(pa_resampler *r);
-static void lavr_reset(pa_resampler *r);
-
 static void lavr_resample(pa_resampler *r, const pa_memchunk *input,
                           unsigned in_n_frames, pa_memchunk *output,
                           unsigned *out_n_frames) {
@@ -136,13 +128,11 @@ int pa_resampler_lavr_init(pa_resampler *r) {
     }
 
     switch (r->work_format) {
-        case PA_SAMPLE_S16BE:
-        case PA_SAMPLE_S16LE:
+        case PA_SAMPLE_S16NE:
             format = AV_SAMPLE_FMT_S16;
             break;
 
-        case PA_SAMPLE_FLOAT32BE:
-        case PA_SAMPLE_FLOAT32LE:
+        case PA_SAMPLE_FLOAT32NE:
             format = AV_SAMPLE_FMT_FLT;
             break;
 
