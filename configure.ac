@@ -1083,7 +1083,7 @@ AS_IF([test "x$HAVE_SPEEX" = "x1"], AC_DEFINE([HAVE_SPEEX], 1, [Have speex]))
 #### sox resampler support (optional) ####
 
 AC_ARG_ENABLE([soxr],
-    AS_HELP_STRING([--disable-soxr],[Disable optional soxr support]))
+    AS_HELP_STRING([--enable-soxr],[Disable optional soxr support]))
 
 AS_IF([test "x$enable_soxr" != "xno"],
     [PKG_CHECK_MODULES(SOXR, soxr, HAVE_SOXR=1, HAVE_SOXR=0)],
