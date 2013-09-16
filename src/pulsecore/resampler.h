@@ -49,7 +49,7 @@ typedef enum pa_resample_method {
     PA_RESAMPLER_COPY,
     PA_RESAMPLER_PEAKS,
     PA_RESAMPLER_SOXR,
-    PA_RESAMPLER_LSWR,
+    PA_RESAMPLER_SWR,
     PA_RESAMPLER_MAX
 } pa_resample_method_t;
 

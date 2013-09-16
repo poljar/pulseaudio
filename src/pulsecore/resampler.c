@@ -111,9 +111,9 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_SOXR]                    = NULL,
 #endif
 #ifdef HAVE_LIBSWRESAMPLE
-    [PA_RESAMPLER_LSWR]                   = pa_resampler_lswr_init,
+    [PA_RESAMPLER_SWR]                     = pa_resampler_lswr_init,
 #else
-    [PA_RESAMPLER_LSWR]                   = NULL,
+    [PA_RESAMPLER_SWR]                     = NULL,
 #endif
 };
 
@@ -158,7 +158,7 @@ static pa_resample_method_t pa_resampler_fix_method(
                 break;
             }
                                      /* Else fall through */
-        case PA_RESAMPLER_LSWR:
+        case PA_RESAMPLER_SWR:
         case PA_RESAMPLER_SOXR:
         case PA_RESAMPLER_FFMPEG:
             if (flags & PA_RESAMPLER_VARIABLE_RATE) {
@@ -267,7 +267,7 @@ static pa_sample_format_t pa_resampler_choose_work_format(
                                                 /* Else fall trough */
         case PA_RESAMPLER_PEAKS:
         case PA_RESAMPLER_SOXR:
-        case PA_RESAMPLER_LSWR:
+        case PA_RESAMPLER_SWR:
             if (a == PA_SAMPLE_S16NE || b == PA_SAMPLE_S16NE)
                 work_format = PA_SAMPLE_S16NE;
             else if (sample_format_more_precise(a, PA_SAMPLE_S16NE) ||
@@ -605,7 +605,7 @@ int pa_resample_method_supported(pa_resample_method_t m) {
 #endif
 
 #ifndef HAVE_LIBSWRESAMPLE
-    if (m == PA_RESAMPLER_LSWR)
+    if (m == PA_RESAMPLER_SWR)
         return 0;
 #endif
 
