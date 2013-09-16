@@ -40,6 +40,10 @@
 #include <pulsecore/sample-util.h>
 #include <pulsecore/core-util.h>
 
+/* The size of the padding is determined by running the resampler
+ * test with different padding values and watching if it crashes.
+ * As it turns out src-sinc-best-quality needs a huge amount of
+ * samples. At least 278 samples are needed so round it up to 280 */
 #define PADDING 280
 
 static void dump_block(const char *label, const pa_sample_spec *ss, const pa_memchunk *chunk) {
