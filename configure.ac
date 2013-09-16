@@ -1113,7 +1113,7 @@ AS_IF([test "x$HAVE_LIBSWRESAMPLE" = "x1"], AC_DEFINE([HAVE_LIBSWRESAMPLE], 1, [
 #### libavresample support (optional) ####
 
 AC_ARG_ENABLE([libavresample],
-   AS_HELP_STRING([--disable-libavresample],[Disable optional libavresample support]))
+   AS_HELP_STRING([--enable-libavresample],[Disable optional libavresample support]))
 
 AS_IF([test "x$enable_libavresample" != "xno"],
     [PKG_CHECK_MODULES(LIBAVRESAMPLE, libavresample, HAVE_LIBAVRESAMPLE=1, HAVE_LIBAVRESAMPLE=0)],
