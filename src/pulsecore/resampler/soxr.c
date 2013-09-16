@@ -75,7 +75,7 @@ static void soxr_udpate_rates(pa_resampler *r) {
 static void soxr_reset(pa_resampler *r) {
     pa_assert(r);
 
-    /* TODO use soxr_clear()
+    /* TODO use soxr_clear() since it is the documented way to reset the resamlper
      * for some reason soxr_process crashes after we use soxr_clear() here */
     soxr_free(r);
     pa_resampler_soxr_init(r);
