@@ -25,7 +25,7 @@
 
 #include <soxr.h>
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 static void soxr_free(pa_resampler *r);
 
