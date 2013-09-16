@@ -1098,7 +1098,7 @@ AS_IF([test "x$HAVE_SOXR" = "x1"], AC_DEFINE([HAVE_SOXR], 1, [Have soxr]))
 #### libswresample support (optional) ####
 
 AC_ARG_ENABLE([libswresample],
-   AS_HELP_STRING([--disable-libswresample],[Disable optional libswresample support]))
+   AS_HELP_STRING([--enable-libswresample],[Disable optional libswresample support]))
 
 AS_IF([test "x$enable_libswresample" != "xno"],
     [PKG_CHECK_MODULES(LIBSWRESAMPLE, libswresample, HAVE_LIBSWRESAMPLE=1, HAVE_LIBSWRESAMPLE=0)],
