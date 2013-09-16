@@ -25,7 +25,7 @@
 
 #include <samplerate.h>
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 static void libsamplerate_resample(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
     SRC_DATA data;

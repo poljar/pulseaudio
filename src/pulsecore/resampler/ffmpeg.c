@@ -26,7 +26,7 @@
 #include <pulse/xmalloc.h>
 #include "../ffmpeg/avcodec.h"
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 struct ffmpeg_data { /* data specific to ffmpeg */
     struct AVResampleContext *state;

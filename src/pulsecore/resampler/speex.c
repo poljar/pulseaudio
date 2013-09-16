@@ -25,7 +25,7 @@
 
 #include <speex/speex_resampler.h>
 
-#include "../resampler.h"
+#include "pulsecore/resampler.h"
 
 static void speex_resample_float(pa_resampler *r, const pa_memchunk *input, unsigned in_n_frames, pa_memchunk *output, unsigned *out_n_frames) {
     float *in, *out;
