@@ -116,9 +116,9 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_SWR]                     = NULL,
 #endif
 #ifdef HAVE_LIBAVRESAMPLE
-    [PA_RESAMPLER_LAVR]                   = pa_resampler_lavr_init,
+    [PA_RESAMPLER_AVR]                     = pa_resampler_lavr_init,
 #else
-    [PA_RESAMPLER_LAVR]                   = NULL,
+    [PA_RESAMPLER_AVR]                     = NULL,
 #endif
 };
 
@@ -163,7 +163,7 @@ static pa_resample_method_t pa_resampler_fix_method(
                 break;
             }
                                      /* Else fall through */
-        case PA_RESAMPLER_LAVR:
+        case PA_RESAMPLER_AVR:
         case PA_RESAMPLER_SWR:
         case PA_RESAMPLER_SOXR:
         case PA_RESAMPLER_FFMPEG:
@@ -617,7 +617,7 @@ int pa_resample_method_supported(pa_resample_method_t m) {
 #endif
 
 #ifndef HAVE_LIBAVRESAMPLE
-    if (m == PA_RESAMPLER_LAVR)
+    if (m == PA_RESAMPLER_AVR)
         return 0;
 #endif
 
