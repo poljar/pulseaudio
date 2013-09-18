@@ -421,7 +421,7 @@ int main(int argc, char *argv[]) {
     pa_mempool *pool = NULL;
     pa_sample_spec a, b;
     pa_resampler *resampler;
-    pa_memchunk input_chunk;
+    pa_memchunk input_chunk, output_chunk;
     pa_resample_method_t method;
 
     int signal_type = SIGNAL_SINE;
@@ -553,11 +553,12 @@ int main(int argc, char *argv[]) {
             pa_log_info("SNR measuring is only possible with a 'sine' signal type");
     }
 
+    pa_resampler_run(resampler, &input_chunk, &output_chunk);
 
-    /* TODO: run resampler here and save the resampled chunk */
     save_chunk("test.wav", &input_chunk, &a);
 
     pa_memblock_unref(input_chunk.memblock);
+    pa_memblock_unref(output_chunk.memblock);
 
     pa_resampler_free(resampler);
 
