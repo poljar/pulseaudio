@@ -61,7 +61,7 @@ static void help(const char *argv0) {
              "-h, --help                            Show this help\n"
              "-v, --verbose                         Print debug messages\n"
              "      --from-rate=SAMPLERATE          From sample rate in Hz (defaults to 96000)\n"
-             "      --format=SAMPLEFORMAT           From sample type (defaults to float32ne)\n"
+             "      --format=SAMPLEFORMAT           Sample format to convert to (defaults to float32ne)\n"
              "      --to-rate=SAMPLERATE            To sample rate in Hz (defaults to 44100)\n"
              "      --resample-method=METHOD        Resample method (defaults to auto)\n"
              "      --signal-length=SECONDS         Length of the generated signal in seconds (defaults to 8)\n"
