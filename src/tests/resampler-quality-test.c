@@ -534,17 +534,18 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    pa_log_info("Generating %s with start freq %dHz, stop freq %dHz and length %ds", signal_to_string(signal_type), freq0, freq1, signal_length);
-
     ret = 0;
     pa_assert_se(pool = pa_mempool_new(false, 0));
 
     pa_assert_se(resampler = pa_resampler_new(pool, &a, NULL, &b, NULL, method, 0));
 
-    if (signal_type == SIGNAL_SINE)
+    if (signal_type == SIGNAL_SINE) {
+        pa_log_info("Generating %s with freq %dHz and length %ds", signal_to_string(signal_type), freq0, signal_length);
         sine_chunk(&input_chunk, pool, &a, freq0, signal_length);
-    else
+    } else {
+        pa_log_info("Generating %s with start freq %dHz, stop freq %dHz and length %ds", signal_to_string(signal_type), freq0, freq1, signal_length);
         chirp_chunk(&input_chunk, pool, &a, freq0, freq1, signal_length, signal_type);
+    }
 
     if (snr) {
         if (signal_type == SIGNAL_SINE)
