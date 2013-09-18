@@ -69,6 +69,7 @@ static void help(const char *argv0) {
              "      --signal-type=SIGNALTYPE        Type of the generated signal (defaults to 440Hz sine)\n"
              "      --base-frequency=BASEFREQUENCY  Start frequency of the chirp or frequency of the sine (defaults to 440Hz)\n"
              "      --stop-frequency=STOPFREQUENCY  Stop frequency of the chirp signal (defaults to 48000Hz)\n"
+             "      --output-file=FILENAME          File name where to save the resampled signal (WAVE file)\n"
              "\n"
              "Sample type must be one of s16le, s16be, float32ne (default float32ne)\n"
              "\n"
@@ -89,6 +90,7 @@ enum {
     ARG_STOP_FREQ,
     ARG_RESAMPLE_METHOD,
     ARG_MEASURE_SNR,
+    ARG_OUTPUT_FILE,
     ARG_DUMP_RESAMPLE_METHODS
 };
 
@@ -426,6 +428,7 @@ int main(int argc, char *argv[]) {
 
     int signal_type = SIGNAL_SINE;
     bool snr = false;
+    char *output_file = NULL;
     int signal_length = 1;
     uint32_t freq0 = 440;
     uint32_t freq1 = 48000;
@@ -442,6 +445,7 @@ int main(int argc, char *argv[]) {
         {"signal-type",           1, NULL, ARG_SIGNAL_TYPE},
         {"base-frequency",        1, NULL, ARG_BASE_FREQ},
         {"measure-snr",           0, NULL, ARG_MEASURE_SNR},
+        {"output-file",           1, NULL, ARG_OUTPUT_FILE},
         {"dump-resample-methods", 0, NULL, ARG_DUMP_RESAMPLE_METHODS},
         {NULL,                    0, NULL, 0}
     };
@@ -520,6 +524,10 @@ int main(int argc, char *argv[]) {
                 snr = true;
                 break;
 
+            case ARG_OUTPUT_FILE:
+                output_file = pa_xstrdup(optarg);
+                break;
+
             case ARG_RESAMPLE_METHOD:
                 if (*optarg == '\0' || pa_streq(optarg, "help")) {
                     dump_resample_methods();
@@ -556,7 +564,11 @@ int main(int argc, char *argv[]) {
 
     pa_resampler_run(resampler, &input_chunk, &output_chunk);
 
-    save_chunk("test.wav", &input_chunk, &a);
+    if (output_file) {
+        pa_log_info("Saving resampled signal to %s", output_file);
+        save_chunk(output_file, &output_chunk, &b);
+        pa_xfree(output_file);
+    }
 
     pa_memblock_unref(input_chunk.memblock);
     pa_memblock_unref(output_chunk.memblock);
