@@ -402,11 +402,10 @@ static int save_chunk(const char *filename, pa_memchunk *chunk, pa_sample_spec *
 
     writef_function = pa_sndfile_writef_function(sample_spec);
 
-    if (sample_spec->format == PA_SAMPLE_FLOAT32NE) {
+    if (sample_spec->format == PA_SAMPLE_FLOAT32NE)
         writef_function(sndfile, memblock.f32_memblock, (sf_count_t) chunk->length / frame_size);
-    } else if (sample_spec->format == PA_SAMPLE_S16NE) {
+    else if (sample_spec->format == PA_SAMPLE_S16NE)
         writef_function(sndfile, memblock.s16_memblock, (sf_count_t) chunk->length / frame_size);
-    }
     else
         pa_assert_not_reached();
 
