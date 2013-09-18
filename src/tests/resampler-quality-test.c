@@ -563,7 +563,7 @@ int main(int argc, char *argv[]) {
 
     pa_resampler_free(resampler);
 
- quit:
+quit:
     if (pool)
         pa_mempool_free(pool);
 
