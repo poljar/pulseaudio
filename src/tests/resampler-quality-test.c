@@ -555,14 +555,15 @@ int main(int argc, char *argv[]) {
         chirp_chunk(&input_chunk, pool, &a, freq0, freq1, signal_length, signal_type);
     }
 
+    pa_resampler_run(resampler, &input_chunk, &output_chunk);
+
     if (snr) {
         if (signal_type == SIGNAL_SINE)
-            measure_snr(&input_chunk, pool);
+            measure_snr(&output_chunk, pool);
         else
             pa_log_info("SNR measuring is only possible with a 'sine' signal type");
     }
 
-    pa_resampler_run(resampler, &input_chunk, &output_chunk);
 
     if (output_file) {
         pa_log_info("Saving resampled signal to %s", output_file);
