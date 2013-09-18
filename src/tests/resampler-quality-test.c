@@ -60,6 +60,7 @@ static void help(const char *argv0) {
     printf(_("%s [options]\n\n"
              "-h, --help                            Show this help\n"
              "-v, --verbose                         Print debug messages\n"
+             "      --measure-snr                   Measure the singal to noise ratio of the resampled signal\n"
              "      --from-rate=SAMPLERATE          From sample rate in Hz (defaults to 96000)\n"
              "      --format=SAMPLEFORMAT           Sample format to convert to (defaults to float32ne)\n"
              "      --to-rate=SAMPLERATE            To sample rate in Hz (defaults to 44100)\n"
@@ -87,6 +88,7 @@ enum {
     ARG_BASE_FREQ,
     ARG_STOP_FREQ,
     ARG_RESAMPLE_METHOD,
+    ARG_MEASURE_SNR,
     ARG_DUMP_RESAMPLE_METHODS
 };
 
@@ -424,6 +426,7 @@ int main(int argc, char *argv[]) {
     pa_resample_method_t method;
 
     int signal_type = SIGNAL_SINE;
+    bool snr = false;
     int signal_length = 1;
     uint32_t freq0 = 440;
     uint32_t freq1 = 48000;
@@ -439,6 +442,7 @@ int main(int argc, char *argv[]) {
         {"resample-method",       1, NULL, ARG_RESAMPLE_METHOD},
         {"signal-type",           1, NULL, ARG_SIGNAL_TYPE},
         {"base-frequency",        1, NULL, ARG_BASE_FREQ},
+        {"measure-snr",           0, NULL, ARG_MEASURE_SNR},
         {"dump-resample-methods", 0, NULL, ARG_DUMP_RESAMPLE_METHODS},
         {NULL,                    0, NULL, 0}
     };
@@ -513,6 +517,10 @@ int main(int argc, char *argv[]) {
                 }
                 break;
 
+            case ARG_MEASURE_SNR:
+                snr = true;
+                break;
+
             case ARG_RESAMPLE_METHOD:
                 if (*optarg == '\0' || pa_streq(optarg, "help")) {
                     dump_resample_methods();
@@ -539,7 +547,14 @@ int main(int argc, char *argv[]) {
     else
         chirp_chunk(&input_chunk, pool, &a, freq0, freq1, signal_length, signal_type);
 
-    measure_snr(&input_chunk, pool);
+    if (snr) {
+        if (signal_type == SIGNAL_SINE)
+            measure_snr(&input_chunk, pool);
+        else
+            pa_log_info("SNR measuring is only possible with a 'sine' signal type");
+    }
+
+
     /* TODO: run resampler here and save the resampled chunk */
     save_chunk("test.wav", &input_chunk, &a);
 
