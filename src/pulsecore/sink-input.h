@@ -25,6 +25,8 @@
 
 #include <inttypes.h>
 
+/* #define SINK_INPUT_REWIND_DEBUG */
+
 typedef struct pa_sink_input pa_sink_input;
 
 #include <pulse/sample.h>
@@ -268,6 +270,9 @@ enum {
     PA_SINK_INPUT_MESSAGE_SET_STATE,
     PA_SINK_INPUT_MESSAGE_SET_REQUESTED_LATENCY,
     PA_SINK_INPUT_MESSAGE_GET_REQUESTED_LATENCY,
+#ifdef SINK_INPUT_REWIND_DEBUG
+    PA_SINK_INPUT_MESSAGE_FORCE_REWIND,
+#endif
     PA_SINK_INPUT_MESSAGE_MAX
 };
 
@@ -382,6 +387,10 @@ void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_p
 pa_resample_method_t pa_sink_input_get_resample_method(pa_sink_input *i);
 
 void pa_sink_input_send_event(pa_sink_input *i, const char *name, pa_proplist *data);
+
+#ifdef SINK_INPUT_REWIND_DEBUG
+void pa_sink_input_force_rewind(pa_sink_input *i, size_t nbytes);
+#endif
 
 int pa_sink_input_move_to(pa_sink_input *i, pa_sink *dest, bool save);
 bool pa_sink_input_may_move(pa_sink_input *i); /* may this sink input move at all? */

@@ -2037,6 +2037,14 @@ int pa_sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int64_t
             *r = i->thread_info.requested_sink_latency;
             return 0;
         }
+
+#ifdef SINK_INPUT_REWIND_DEBUG
+        case PA_SINK_INPUT_MESSAGE_FORCE_REWIND: {
+            size_t *nbytes = userdata;
+            pa_sink_input_request_rewind(i, *nbytes, true, true, false);
+            return 0;
+        }
+#endif
     }
 
     return -PA_ERR_NOTIMPLEMENTED;
@@ -2063,6 +2071,15 @@ bool pa_sink_input_safe_to_remove(pa_sink_input *i) {
 
     return true;
 }
+
+/* Called from main thread */
+#ifdef SINK_INPUT_REWIND_DEBUG
+void pa_sink_input_force_rewind(pa_sink_input *i, size_t nbytes) {
+    pa_log_error("Forcing rewind");
+    if (i->state == PA_SINK_INPUT_RUNNING)
+        pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_FORCE_REWIND, &nbytes, 0, NULL) == 0);
+}
+#endif
 
 /* Called from IO context */
 void pa_sink_input_request_rewind(
