@@ -137,6 +137,9 @@ static int pa_cli_command_sink_port(pa_core *c, pa_tokenizer *t, pa_strbuf *buf,
 static int pa_cli_command_source_port(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail);
 static int pa_cli_command_port_offset(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail);
 static int pa_cli_command_dump_volumes(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail);
+#ifdef SINK_INPUT_REWIND_DEBUG
+static int pa_cli_command_rewind_sink_input(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail);
+#endif
 
 /* A method table for all available commands */
 
@@ -196,6 +199,9 @@ static const struct command commands[] = {
     { "play-file",               pa_cli_command_play_file,          "Play a sound file (args: filename, sink|index)", 3},
     { "dump",                    pa_cli_command_dump,               "Dump daemon configuration", 1},
     { "dump-volumes",            pa_cli_command_dump_volumes,       "Debug: Show the state of all volumes", 1 },
+#ifdef SINK_INPUT_REWIND_DEBUG
+    { "rewind-sink-input",       pa_cli_command_rewind_sink_input,  "Force a rewind on a sink input (args: index)", 2 },
+#endif
     { "shared",                  pa_cli_command_list_shared_props,  "Debug: Show shared properties", 1},
     { "exit",                    pa_cli_command_exit,               "Terminate the daemon",         1 },
     { "vacuum",                  pa_cli_command_vacuum,             NULL, 1},
@@ -1993,6 +1999,38 @@ static int pa_cli_command_dump_volumes(pa_core *c, pa_tokenizer *t, pa_strbuf *b
 
     return 0;
 }
+
+#ifdef SINK_INPUT_REWIND_DEBUG
+static int pa_cli_command_rewind_sink_input(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail) {
+    const char *n;
+    pa_sink_input *si;
+    uint32_t idx;
+
+    pa_core_assert_ref(c);
+    pa_assert(t);
+    pa_assert(buf);
+    pa_assert(fail);
+
+    if (!(n = pa_tokenizer_get(t, 1))) {
+        pa_strbuf_puts(buf, "You need to specify a sink input by its index.\n");
+        return -1;
+    }
+
+    if ((idx = parse_index(n)) == PA_IDXSET_INVALID) {
+        pa_strbuf_puts(buf, "Failed to parse index.\n");
+        return -1;
+    }
+
+    if (!(si = pa_idxset_get_by_index(c->sink_inputs, idx))) {
+        pa_strbuf_puts(buf, "No sink input found with this index.\n");
+        return -1;
+    }
+
+    pa_sink_input_force_rewind(si, 0);
+
+    return 0;
+}
+#endif
 
 int pa_cli_command_execute_line_stateful(pa_core *c, const char *s, pa_strbuf *buf, bool *fail, int *ifstate) {
     const char *cs;
