@@ -39,6 +39,10 @@
 #include <pulse/xmalloc.h>
 #include <pulse/error.h>
 
+#ifdef SINK_INPUT_REWIND_DEBUG
+#include <pulse/sample.h>
+#endif
+
 #include <pulsecore/module.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/source.h>
@@ -200,7 +204,7 @@ static const struct command commands[] = {
     { "dump",                    pa_cli_command_dump,               "Dump daemon configuration", 1},
     { "dump-volumes",            pa_cli_command_dump_volumes,       "Debug: Show the state of all volumes", 1 },
 #ifdef SINK_INPUT_REWIND_DEBUG
-    { "rewind-sink-input",       pa_cli_command_rewind_sink_input,  "Force a rewind on a sink input (args: index)", 2 },
+    { "rewind-sink-input",       pa_cli_command_rewind_sink_input,  "Force a rewind on a sink input (args: index, number of samples)", 3 },
 #endif
     { "shared",                  pa_cli_command_list_shared_props,  "Debug: Show shared properties", 1},
     { "exit",                    pa_cli_command_exit,               "Terminate the daemon",         1 },
@@ -2002,9 +2006,9 @@ static int pa_cli_command_dump_volumes(pa_core *c, pa_tokenizer *t, pa_strbuf *b
 
 #ifdef SINK_INPUT_REWIND_DEBUG
 static int pa_cli_command_rewind_sink_input(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, bool *fail) {
-    const char *n;
+    const char *n, *b;
     pa_sink_input *si;
-    uint32_t idx;
+    uint32_t idx, nbytes;
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -2021,12 +2025,22 @@ static int pa_cli_command_rewind_sink_input(pa_core *c, pa_tokenizer *t, pa_strb
         return -1;
     }
 
+    if (!(b = pa_tokenizer_get(t, 2))) {
+        pa_strbuf_puts(buf, "You need to specify the number of bytes to rewind.");
+        return -1;
+    }
+
+    if (pa_atou(b, &nbytes) < 0) {
+        pa_strbuf_puts(buf, "Failed to parse the number of bytes.\n");
+        return -1;
+    }
+
     if (!(si = pa_idxset_get_by_index(c->sink_inputs, idx))) {
         pa_strbuf_puts(buf, "No sink input found with this index.\n");
         return -1;
     }
 
-    pa_sink_input_force_rewind(si, 0);
+    pa_sink_input_force_rewind(si, nbytes * pa_sample_size(&si->sample_spec));
 
     return 0;
 }
